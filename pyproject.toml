@@ -1,0 +1,38 @@
+[project]
+name = "huawei-app-gallery-mcp"
+version = "1.0.0"
+description = "MCP server for managing app publishing on Huawei AppGallery Connect"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["huawei", "appgallery", "mcp", "publish", "android"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27.0",
+    "aiofiles>=23.2.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/AgiMaulana/HuaweiAppGalleryMcp"
+Repository = "https://github.com/AgiMaulana/HuaweiAppGalleryMcp"
+Issues = "https://github.com/AgiMaulana/HuaweiAppGalleryMcp/issues"
+
+[project.scripts]
+huawei-app-gallery-mcp = "huawei_appgallery_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["huawei_appgallery_mcp"]

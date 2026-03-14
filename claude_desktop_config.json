@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "huawei-appgallery": {
+      "command": "/Users/agi.maulana/Documents/Workspace/HuaweiAppGalleryMcp/.venv/bin/python",
+      "args": ["-m", "huawei_appgallery_mcp.server"],
+      "env": {
+        "HUAWEI_CLIENT_ID": "your_client_id_here",
+        "HUAWEI_CLIENT_SECRET": "your_client_secret_here"
+      }
+    }
+  }
+}
