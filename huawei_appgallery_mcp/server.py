@@ -7,9 +7,10 @@ Manages the full app publishing lifecycle:
   3. Upload APK / AAB files (single or chunked)
   4. Submit app for release
 
-Configuration via environment variables:
-  HUAWEI_CLIENT_ID      – AppGallery Connect API client ID
-  HUAWEI_CLIENT_SECRET  – AppGallery Connect API client secret
+Configuration via environment variables (set in .env or MCP config env block):
+  HUAWEI_CLIENT_ID      – Connect API client ID from AGC Console → Users & Permissions → API key (required)
+  HUAWEI_CLIENT_SECRET  – Connect API client secret (required)
+  HUAWEI_APP_ID         – Default app ID; all tools fall back to this when app_id is not passed (optional)
 """
 
 import json
@@ -17,8 +18,7 @@ from pathlib import Path
 from typing import Any
 
 # Load .env from the working directory (or any parent) if present.
-# This lets users set HUAWEI_CLIENT_ID / HUAWEI_CLIENT_SECRET in a .env file
-# without needing to export them in the shell or MCP config.
+# This lets users set credentials in a .env file without exporting them in the shell.
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -46,6 +46,15 @@ from huawei_appgallery_mcp.api.publish import submit_app, submit_app_with_file
 
 app = Server("huawei-appgallery-mcp")
 
+# Shared app_id property injected into every tool schema
+_APP_ID_PROP = {
+    "type": "string",
+    "description": (
+        "AppGallery Connect app ID. "
+        "Optional if HUAWEI_APP_ID is set in the environment."
+    ),
+}
+
 # ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
@@ -61,14 +70,13 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
                     "description": "1 = formal release (default), 3 = phased/grey release.",
                 },
             },
-            "required": ["app_id"],
         },
     ),
     Tool(
@@ -80,7 +88,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "default_lang": {"type": "string", "description": 'Default language tag, e.g. "en-US".'},
                 "app_name": {"type": "string", "description": "App display name."},
                 "app_desc": {"type": "string", "description": "Full app description (shown on store page)."},
@@ -98,7 +106,6 @@ TOOLS: list[Tool] = [
                 },
                 "age_rating": {"type": "integer", "description": "Age rating (e.g. 7, 12, 16, 18)."},
             },
-            "required": ["app_id"],
         },
     ),
 
@@ -112,7 +119,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "lang": {
                     "type": "string",
                     "description": 'BCP-47 language tag, e.g. "en-US", "zh-CN", "id".',
@@ -125,7 +132,7 @@ TOOLS: list[Tool] = [
                     "description": "\"What's new\" release notes in this language.",
                 },
             },
-            "required": ["app_id", "lang"],
+            "required": ["lang"],
         },
     ),
     Tool(
@@ -134,10 +141,10 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "lang": {"type": "string", "description": 'Language tag to delete, e.g. "fr-FR".'},
             },
-            "required": ["app_id", "lang"],
+            "required": ["lang"],
         },
     ),
 
@@ -151,7 +158,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "suffix": {
                     "type": "string",
                     "enum": ["apk", "aab", "rpk", "pdf", "jpg", "jpeg", "png"],
@@ -167,7 +174,7 @@ TOOLS: list[Tool] = [
                     "description": "1 = formal release (default), 3 = phased release.",
                 },
             },
-            "required": ["app_id", "suffix"],
+            "required": ["suffix"],
         },
     ),
     Tool(
@@ -180,7 +187,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "file_path": {
                     "type": "string",
                     "description": "Absolute path to the APK or AAB file on the local machine.",
@@ -191,7 +198,7 @@ TOOLS: list[Tool] = [
                     "description": "1=APK, 2=RPK, 5=AAB.",
                 },
             },
-            "required": ["app_id", "file_path", "file_type"],
+            "required": ["file_path", "file_type"],
         },
     ),
     Tool(
@@ -203,7 +210,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "file_type": {
                     "type": "integer",
                     "enum": [1, 2, 5],
@@ -226,7 +233,7 @@ TOOLS: list[Tool] = [
                     },
                 },
             },
-            "required": ["app_id", "file_type", "files"],
+            "required": ["file_type", "files"],
         },
     ),
 
@@ -241,7 +248,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
@@ -259,7 +266,6 @@ TOOLS: list[Tool] = [
                 },
                 "remark": {"type": "string", "description": "Internal release notes (not shown to users)."},
             },
-            "required": ["app_id"],
         },
     ),
     Tool(
@@ -271,7 +277,7 @@ TOOLS: list[Tool] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "app_id": {"type": "string", "description": "The AppGallery Connect app ID."},
+                "app_id": _APP_ID_PROP,
                 "file_type": {
                     "type": "integer",
                     "enum": [1, 2, 5],
@@ -302,7 +308,7 @@ TOOLS: list[Tool] = [
                 "release_time": {"type": "integer", "description": "Scheduled release timestamp in Unix ms."},
                 "remark": {"type": "string"},
             },
-            "required": ["app_id", "file_type", "files"],
+            "required": ["file_type", "files"],
         },
     ),
 ]
@@ -333,14 +339,14 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
         case "query_app_info":
             return await query_app_info(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 release_type=args.get("release_type", 1),
             )
 
         case "update_app_info":
             return await update_app_info(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 default_lang=args.get("default_lang"),
                 app_name=args.get("app_name"),
                 app_desc=args.get("app_desc"),
@@ -359,7 +365,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
         case "update_language_info":
             return await update_language_info(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 args["lang"],
                 app_name=args.get("app_name"),
                 app_desc=args.get("app_desc"),
@@ -368,7 +374,11 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "delete_language_info":
-            return await delete_language_info(config, args["app_id"], args["lang"])
+            return await delete_language_info(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                args["lang"],
+            )
 
         # ── File Upload ───────────────────────────────────────────────────────
         case "get_upload_url":
@@ -378,7 +388,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 suffix = file_name.rsplit(".", 1)[-1].lower()
             return await get_upload_url(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 suffix,
                 file_name or "",
                 release_type=args.get("release_type", 1),
@@ -389,12 +399,13 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
 
+            app_id = config.resolve_app_id(args.get("app_id"))
             suffix = file_path.suffix.lstrip(".").lower()
             file_name = file_path.name
             file_size = file_path.stat().st_size
 
             # Step 1 – get upload URL
-            url_data = await get_upload_url(config, args["app_id"], suffix, file_name)
+            url_data = await get_upload_url(config, app_id, suffix, file_name)
             upload_url = url_data.get("uploadUrl") or url_data.get("info", {}).get("uploadUrl", "")
             chunk_url = url_data.get("chunkUploadUrl") or url_data.get("info", {}).get("chunkUploadUrl", "")
             auth_code = url_data.get("authCode") or url_data.get("info", {}).get("authCode", "")
@@ -408,7 +419,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             # Step 3 – attach to draft
             result = await update_app_file_info(
                 config,
-                args["app_id"],
+                app_id,
                 args["file_type"],
                 [{"fileName": file_name, "fileDestUlr": dest_url}],
             )
@@ -416,7 +427,6 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             return result
 
         case "update_app_file_info":
-            # Normalize snake_case → camelCase expected by the API
             api_files = [
                 {
                     "fileName": f["file_name"],
@@ -426,14 +436,17 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 for f in args["files"]
             ]
             return await update_app_file_info(
-                config, args["app_id"], args["file_type"], api_files
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                args["file_type"],
+                api_files,
             )
 
         # ── Publishing ────────────────────────────────────────────────────────
         case "submit_app":
             return await submit_app(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 release_type=args.get("release_type", 1),
                 release_percent=args.get("release_percent"),
                 release_time=args.get("release_time"),
@@ -441,7 +454,6 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "submit_app_with_file":
-            # Normalize snake_case → camelCase
             api_files = [
                 {
                     "fileName": f["file_name"],
@@ -452,7 +464,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             ]
             return await submit_app_with_file(
                 config,
-                args["app_id"],
+                config.resolve_app_id(args.get("app_id")),
                 args["file_type"],
                 api_files,
                 release_type=args.get("release_type", 1),

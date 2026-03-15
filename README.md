@@ -28,13 +28,21 @@ uv pip install huawei-app-gallery-mcp
 
 1. Go to [AppGallery Connect](https://developer.huawei.com/consumer/en/service/josp/agc/index.html)
 2. Navigate to **Users & Permissions** → **API key** → **Connect API**
-3. Create a key and copy the **Client ID** and **Client Secret**
+3. Click **Create** and select the **App manager** role
+4. Copy the **Client ID** and **Client Secret**
+
+> These are **Connect API** credentials — different from HMS Core app credentials.
 
 ### 2. Set environment variables
 
+Create a `.env` file in your working directory (the server loads it automatically):
+
 ```bash
-export HUAWEI_CLIENT_ID=your_client_id
-export HUAWEI_CLIENT_SECRET=your_client_secret
+HUAWEI_CLIENT_ID=your_connect_api_client_id
+HUAWEI_CLIENT_SECRET=your_connect_api_client_secret
+
+# Optional: set a default app ID so you don't have to pass it to every tool call
+HUAWEI_APP_ID=your_app_id
 ```
 
 ### 3. Connect to Claude Desktop
@@ -48,23 +56,28 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
       "command": "huawei-app-gallery-mcp",
       "env": {
         "HUAWEI_CLIENT_ID": "your_client_id",
-        "HUAWEI_CLIENT_SECRET": "your_client_secret"
+        "HUAWEI_CLIENT_SECRET": "your_client_secret",
+        "HUAWEI_APP_ID": "your_app_id"
       }
     }
   }
 }
 ```
 
-If you installed into a virtual environment, use the full path to the executable instead:
+### Connect to Claude Code (machine-level)
+
+Create `/Library/Application Support/ClaudeCode/managed-mcp.json` (macOS) or `/etc/claude-code/managed-mcp.json` (Linux):
 
 ```json
 {
   "mcpServers": {
     "huawei-appgallery": {
-      "command": "/path/to/.venv/bin/huawei-app-gallery-mcp",
+      "type": "stdio",
+      "command": "huawei-app-gallery-mcp",
       "env": {
         "HUAWEI_CLIENT_ID": "your_client_id",
-        "HUAWEI_CLIENT_SECRET": "your_client_secret"
+        "HUAWEI_CLIENT_SECRET": "your_client_secret",
+        "HUAWEI_APP_ID": "your_app_id"
       }
     }
   }
@@ -73,6 +86,8 @@ If you installed into a virtual environment, use the full path to the executable
 
 ## Tools
 
+All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from the environment is used as the default.
+
 | Tool | Description |
 |---|---|
 | `query_app_info` | Query current app metadata (name, description, category, ratings, etc.) |
@@ -80,7 +95,7 @@ If you installed into a virtual environment, use the full path to the executable
 | `update_language_info` | Add or update a localized store listing for a specific language |
 | `delete_language_info` | Remove a localized store listing |
 | `get_upload_url` | Obtain a pre-signed upload URL and auth code before uploading a file |
-| `upload_app_file` | Upload an APK/AAB from local disk and attach it to the app draft (auto-chunked for large files) |
+| `upload_app_file` | Upload an APK/AAB from local disk and attach it to the app draft (auto-chunked for >4 GB) |
 | `update_app_file_info` | Manually attach already-uploaded files to the app draft |
 | `submit_app` | Submit the app for review and release |
 | `submit_app_with_file` | Submit when the binary is hosted on your own server |
@@ -89,19 +104,19 @@ If you installed into a virtual environment, use the full path to the executable
 
 **Upload and release a new version:**
 
-> Upload `/path/to/app-release.aab` (AAB, file type 5) for app ID `123456789`, then submit it for a full release.
+> Upload `/path/to/app-release.aab` (AAB, file type 5) then submit it for a full release.
 
 **Phased rollout:**
 
-> Submit app `123456789` for a phased release to 20% of users.
+> Submit the app for a phased release to 20% of users.
 
 **Update release notes:**
 
-> Update the English release notes for app `123456789` to "Bug fixes and performance improvements".
+> Update the English release notes to "Bug fixes and performance improvements".
 
 **Scheduled release:**
 
-> Submit app `123456789` for release on March 20, 2026 at 10:00 UTC.
+> Submit the app for release on March 20, 2026 at 10:00 UTC.
 
 ## Publishing Workflow
 
@@ -111,7 +126,7 @@ Update app info  →  Update language info  →  Upload APK/AAB  →  Submit app
 
 1. Use `update_app_info` / `update_language_info` to set metadata and release notes
 2. Use `upload_app_file` to upload the binary (handles chunking automatically)
-3. Use `submit_app` to trigger the review and release
+3. Use `submit_app` to trigger review and release
 
 ## API Reference
 

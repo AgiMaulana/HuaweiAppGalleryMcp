@@ -13,7 +13,10 @@ from dataclasses import dataclass
 
 import httpx
 
-TOKEN_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
+# AppGallery Connect Publishing API token endpoint.
+# Requires Connect API credentials from:
+#   AGC Console → Users & Permissions → API key → Connect API
+TOKEN_URL = "https://connect-api.cloud.huawei.com/api/oauth2/v1/token"
 
 # Token refresh buffer: refresh when less than 60 s remain
 _REFRESH_BUFFER = 60
@@ -26,6 +29,7 @@ _token_expires_at: float = 0.0
 class AuthConfig:
     client_id: str
     client_secret: str
+    default_app_id: str | None = None  # from HUAWEI_APP_ID, optional
 
     @classmethod
     def from_env(cls) -> "AuthConfig":
@@ -35,7 +39,20 @@ class AuthConfig:
             raise EnvironmentError(
                 "HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET environment variables must be set."
             )
-        return cls(client_id=client_id, client_secret=client_secret)
+        return cls(
+            client_id=client_id,
+            client_secret=client_secret,
+            default_app_id=os.environ.get("HUAWEI_APP_ID") or None,
+        )
+
+    def resolve_app_id(self, app_id: str | None) -> str:
+        """Return app_id from the call argument, falling back to HUAWEI_APP_ID."""
+        resolved = app_id or self.default_app_id
+        if not resolved:
+            raise ValueError(
+                "app_id is required. Pass it as a tool argument or set HUAWEI_APP_ID in your environment."
+            )
+        return resolved
 
 
 async def get_access_token(config: AuthConfig) -> str:
@@ -48,15 +65,22 @@ async def get_access_token(config: AuthConfig) -> str:
     async with httpx.AsyncClient() as client:
         response = await client.post(
             TOKEN_URL,
-            data={
+            json={
                 "grant_type": "client_credentials",
                 "client_id": config.client_id,
                 "client_secret": config.client_secret,
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         response.raise_for_status()
         data = response.json()
+
+    # connect-api wraps errors in a ret.code field instead of HTTP 4xx
+    if "ret" in data and data["ret"].get("code", 0) != 0:
+        raise RuntimeError(
+            f"Failed to obtain token: {data['ret'].get('msg', data['ret'])}\n"
+            "Ensure HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET are AppGallery Connect "
+            "API credentials (AGC Console → Users & Permissions → API key → Connect API)."
+        )
 
     _cached_token = data["access_token"]
     _token_expires_at = now + data["expires_in"]
