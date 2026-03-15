@@ -1,6 +1,6 @@
 [project]
 name = "huawei-app-gallery-mcp"
-version = "1.0.0"
+version = "1.0.2"
 description = "MCP server for managing app publishing on Huawei AppGallery Connect"
 readme = "README.md"
 license = { text = "MIT" }
@@ -20,6 +20,7 @@ dependencies = [
     "mcp>=1.0.0",
     "httpx>=0.27.0",
     "aiofiles>=23.2.1",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.urls]

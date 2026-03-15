@@ -16,6 +16,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+# Load .env from the working directory (or any parent) if present.
+# This lets users set HUAWEI_CLIENT_ID / HUAWEI_CLIENT_SECRET in a .env file
+# without needing to export them in the shell or MCP config.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv is optional; env vars can still be set directly
+
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool

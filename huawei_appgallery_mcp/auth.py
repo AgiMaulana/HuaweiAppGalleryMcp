@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import httpx
 
-TOKEN_URL = "https://connect-api.cloud.huawei.com/api/oauth2/v1/token"
+TOKEN_URL = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
 
 # Token refresh buffer: refresh when less than 60 s remain
 _REFRESH_BUFFER = 60
