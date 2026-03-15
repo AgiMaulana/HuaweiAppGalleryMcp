@@ -75,10 +75,7 @@ TOOLS: list[Tool] = [
     # ── App Info ──────────────────────────────────────────────────────────────
     Tool(
         name="query_app_info",
-        description=(
-            "Query the current metadata of an app (name, description, category, "
-            "content rating, etc.) from Huawei AppGallery Connect."
-        ),
+        description="Query app metadata (name, description, category, content rating) from AppGallery Connect.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -86,37 +83,34 @@ TOOLS: list[Tool] = [
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = formal release (default), 3 = phased/grey release.",
+                    "description": "1=formal (default), 3=phased/grey.",
                 },
             },
         },
     ),
     Tool(
         name="update_app_info",
-        description=(
-            "Update app metadata (name, description, category, privacy policy, "
-            "content rating, support contact, etc.) in the AppGallery Connect draft."
-        ),
+        description="Update app metadata in the AppGallery Connect draft (name, description, category, ratings, support contacts, privacy policy).",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "default_lang": {"type": "string", "description": 'Default language tag, e.g. "en-US".'},
-                "app_name": {"type": "string", "description": "App display name."},
-                "app_desc": {"type": "string", "description": "Full app description (shown on store page)."},
-                "brief_desc": {"type": "string", "description": "Short tagline / brief description."},
-                "privacy_policy": {"type": "string", "description": "URL of the app's privacy policy."},
-                "category_id": {"type": "string", "description": "Primary category ID from AppGallery taxonomy."},
-                "sub_category_id": {"type": "string", "description": "Sub-category ID from AppGallery taxonomy."},
-                "cs_email": {"type": "string", "description": "Customer support email address."},
-                "cs_phone": {"type": "string", "description": "Customer support phone number."},
-                "cs_url": {"type": "string", "description": "Customer support URL."},
+                "default_lang": {"type": "string", "description": 'e.g. "en-US"'},
+                "app_name": {"type": "string"},
+                "app_desc": {"type": "string", "description": "Full store description."},
+                "brief_desc": {"type": "string", "description": "Short tagline."},
+                "privacy_policy": {"type": "string", "description": "Privacy policy URL."},
+                "category_id": {"type": "string", "description": "Primary category ID."},
+                "sub_category_id": {"type": "string", "description": "Sub-category ID."},
+                "cs_email": {"type": "string"},
+                "cs_phone": {"type": "string"},
+                "cs_url": {"type": "string"},
                 "content_rating": {
                     "type": "integer",
                     "enum": [1, 2, 3, 4],
                     "description": "1=Everyone, 2=Pre-teen, 3=Teen, 4=Mature.",
                 },
-                "age_rating": {"type": "integer", "description": "Age rating (e.g. 7, 12, 16, 18)."},
+                "age_rating": {"type": "integer", "description": "e.g. 7, 12, 16, 18"},
             },
         },
     ),
@@ -124,37 +118,28 @@ TOOLS: list[Tool] = [
     # ── Language Info ──────────────────────────────────────────────────────────
     Tool(
         name="update_language_info",
-        description=(
-            "Add or update localized store listing content (app name, description, "
-            "release notes) for a specific language."
-        ),
+        description="Add or update localized store listing (name, description, release notes) for a language.",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "lang": {
-                    "type": "string",
-                    "description": 'BCP-47 language tag, e.g. "en-US", "zh-CN", "id".',
-                },
-                "app_name": {"type": "string", "description": "App name in this language."},
-                "app_desc": {"type": "string", "description": "App description in this language."},
-                "brief_desc": {"type": "string", "description": "Brief introduction in this language."},
-                "new_features": {
-                    "type": "string",
-                    "description": "\"What's new\" release notes in this language.",
-                },
+                "lang": {"type": "string", "description": 'BCP-47 tag, e.g. "en-US", "zh-CN".'},
+                "app_name": {"type": "string"},
+                "app_desc": {"type": "string"},
+                "brief_desc": {"type": "string"},
+                "new_features": {"type": "string", "description": "What's new / release notes."},
             },
             "required": ["lang"],
         },
     ),
     Tool(
         name="delete_language_info",
-        description="Remove a localized store listing for a specific language from the app draft.",
+        description="Remove a localized store listing from the app draft.",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "lang": {"type": "string", "description": 'Language tag to delete, e.g. "fr-FR".'},
+                "lang": {"type": "string", "description": 'e.g. "fr-FR"'},
             },
             "required": ["lang"],
         },
@@ -163,10 +148,7 @@ TOOLS: list[Tool] = [
     # ── File Upload ────────────────────────────────────────────────────────────
     Tool(
         name="get_upload_url",
-        description=(
-            "Obtain a pre-signed upload URL and auth code from Huawei before uploading "
-            "an APK, AAB, or other file. Returns uploadUrl, chunkUploadUrl, and authCode."
-        ),
+        description="Get a pre-signed upload URL and authCode for an APK/AAB/asset file. Returns uploadUrl, chunkUploadUrl, authCode.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -174,16 +156,13 @@ TOOLS: list[Tool] = [
                 "suffix": {
                     "type": "string",
                     "enum": ["apk", "aab", "rpk", "pdf", "jpg", "jpeg", "png"],
-                    "description": "File extension of the file to upload.",
+                    "description": "File extension.",
                 },
-                "file_name": {
-                    "type": "string",
-                    "description": "File name (used locally to determine suffix if suffix not provided).",
-                },
+                "file_name": {"type": "string", "description": "File name (used to infer suffix if omitted)."},
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = formal release (default), 3 = phased release.",
+                    "description": "1=formal (default), 3=phased.",
                 },
             },
             "required": ["suffix"],
@@ -191,19 +170,12 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="upload_app_file",
-        description=(
-            "Upload an APK or AAB file from the local filesystem to Huawei AppGallery. "
-            "Handles the full flow: get upload URL → upload (chunked automatically for files >4 GB) "
-            "→ attach file to app draft. Returns the API response."
-        ),
+        description="Upload APK/AAB from local disk to AppGallery (get URL → upload, auto-chunked >4 GB → attach to draft).",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "file_path": {
-                    "type": "string",
-                    "description": "Absolute path to the APK or AAB file on the local machine.",
-                },
+                "file_path": {"type": "string", "description": "Absolute local path to APK or AAB."},
                 "file_type": {
                     "type": "integer",
                     "enum": [1, 2, 5],
@@ -215,10 +187,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="update_app_file_info",
-        description=(
-            "Manually attach one or more already-uploaded files to the app draft. "
-            "Use this after you ran get_upload_url and uploaded files yourself."
-        ),
+        description="Attach already-uploaded files to the app draft. Use after get_upload_url + manual upload.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -230,16 +199,12 @@ TOOLS: list[Tool] = [
                 },
                 "files": {
                     "type": "array",
-                    "description": "Array of uploaded file descriptors.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "file_name": {"type": "string"},
-                            "file_dest_url": {
-                                "type": "string",
-                                "description": "Destination URL returned by the upload endpoint.",
-                            },
-                            "sha256": {"type": "string", "description": "SHA-256 hash of the file (recommended)."},
+                            "file_dest_url": {"type": "string", "description": "URL returned by upload endpoint."},
+                            "sha256": {"type": "string"},
                         },
                         "required": ["file_name", "file_dest_url"],
                     },
@@ -252,11 +217,7 @@ TOOLS: list[Tool] = [
     # ── Publishing ─────────────────────────────────────────────────────────────
     Tool(
         name="submit_app",
-        description=(
-            "Submit the app for review and release on Huawei AppGallery. "
-            "All app info and file info must be saved before calling this. "
-            "Supports full release, phased (grey) release, scheduled release, and channel-specific release (e.g. open testing via channel_id=2)."
-        ),
+        description="Submit app for review/release. Supports full, phased, scheduled, and channel releases (channel_id=2 for open testing). Save all info first.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -264,59 +225,53 @@ TOOLS: list[Tool] = [
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = full release to all users (default), 3 = phased/grey release.",
+                    "description": "1=full (default), 3=phased/grey.",
                 },
                 "release_percent": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 100,
-                    "description": "Percentage of users to receive the update. Only used when release_type=3.",
+                    "description": "Rollout % for release_type=3.",
                 },
-                "release_time": {
-                    "type": "integer",
-                    "description": "Scheduled release timestamp in Unix milliseconds. Omit for immediate.",
-                },
-                "remark": {"type": "string", "description": "Internal release notes (not shown to users)."},
-                "channel_id": {
-                    "type": "integer",
-                    "description": "Optional channel ID. Use 2 for open testing.",
-                },
+                "release_time": {"type": "integer", "description": "Scheduled release in Unix ms; omit for immediate."},
+                "remark": {"type": "string", "description": "Internal notes."},
+                "channel_id": {"type": "integer", "description": "2=open testing."},
             },
         },
     ),
     Tool(
         name="change_phased_release_state",
-        description="Change the release status of an app in phased (grey) release — proceed, roll back, or stop.",
+        description="Proceed, roll back, or stop a phased (grey) release.",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
                 "state": {
                     "type": "string",
-                    "description": "RELEASE = proceed, ROLLBACK = roll back, GRAY_TERMINATED = stop phased release.",
+                    "description": "RELEASE=proceed, ROLLBACK=roll back, GRAY_TERMINATED=stop.",
                 },
                 "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
                 "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
-                "phased_release_percent": {"type": "string", "description": "Rollout percentage, e.g. \"50.00\"."},
+                "phased_release_percent": {"type": "string", "description": 'Rollout %, e.g. "50.00".'},
             },
             "required": ["state"],
         },
     ),
     Tool(
         name="update_phased_release",
-        description="Change a phased release to full release, or update the phased release schedule/percentage.",
+        description="Convert phased release to full, or update its schedule/percentage.",
         inputSchema={
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "state": {"type": "string", "description": "Release state, e.g. RELEASE."},
+                "state": {"type": "string", "description": "e.g. RELEASE"},
                 "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
                 "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
-                "phased_release_percent": {"type": "string", "description": "Rollout percentage, e.g. \"50.00\"."},
+                "phased_release_percent": {"type": "string", "description": 'Rollout %, e.g. "50.00".'},
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = convert to full release, 3 = keep as phased (default).",
+                    "description": "1=convert to full, 3=keep phased (default).",
                 },
             },
             "required": ["state"],
@@ -324,10 +279,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="update_release_time",
-        description=(
-            "Update the scheduled release time of a version. "
-            "Only callable when the app is in Releasing state."
-        ),
+        description="Update scheduled release time. Only valid when app is in Releasing state.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -335,16 +287,16 @@ TOOLS: list[Tool] = [
                 "change_type": {
                     "type": "integer",
                     "enum": [1, 2, 3],
-                    "description": "1 = release immediately, 2 = release as scheduled, 3 = update scheduled time.",
+                    "description": "1=release now, 2=release as scheduled, 3=update scheduled time.",
                 },
                 "release_time": {
                     "type": "string",
-                    "description": "UTC datetime string, e.g. 2026-04-01T10:00:00+0800. Required for change_type 2 or 3.",
+                    "description": "UTC datetime, e.g. 2026-04-01T10:00:00+0800. Required for change_type 2 or 3.",
                 },
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = full release (default), 3 = phased.",
+                    "description": "1=full (default), 3=phased.",
                 },
             },
             "required": ["change_type"],
@@ -352,7 +304,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="set_gms_dependency",
-        description="Report whether the app depends on GMS (Google Mobile Services) to AppGallery Connect.",
+        description="Declare whether the app depends on GMS (Google Mobile Services).",
         inputSchema={
             "type": "object",
             "properties": {
@@ -360,7 +312,7 @@ TOOLS: list[Tool] = [
                 "need_gms": {
                     "type": "integer",
                     "enum": [0, 1],
-                    "description": "0 = does not depend on GMS, 1 = depends on GMS.",
+                    "description": "0=no GMS, 1=requires GMS.",
                 },
             },
             "required": ["need_gms"],
@@ -368,7 +320,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="query_compile_status",
-        description="Query the AAB compilation status for one or more app package IDs returned after uploading.",
+        description="Query AAB compilation status for package IDs returned after upload.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -376,7 +328,7 @@ TOOLS: list[Tool] = [
                 "pkg_ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of app package IDs to query.",
+                    "description": "Package IDs to query.",
                 },
             },
             "required": ["pkg_ids"],
@@ -384,10 +336,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="get_download_report_url",
-        description=(
-            "Obtain the download URL of the app download and installation report (CSV or Excel). "
-            "Max date range: 180 days."
-        ),
+        description="Get download URL for app download/install report (CSV or Excel). Max 180-day range.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -395,29 +344,22 @@ TOOLS: list[Tool] = [
                 "language": {
                     "type": "string",
                     "enum": ["zh-CN", "en-US", "ru-RU"],
-                    "description": "Language for report column headers.",
+                    "description": "Column header language.",
                 },
-                "start_time": {"type": "string", "description": "Start date in YYYYMMDD format (UTC)."},
-                "end_time": {"type": "string", "description": "End date in YYYYMMDD format (UTC)."},
+                "start_time": {"type": "string", "description": "YYYYMMDD (UTC)."},
+                "end_time": {"type": "string", "description": "YYYYMMDD (UTC)."},
                 "group_by": {
                     "type": "string",
-                    "description": "Grouping dimension: date (default), countryId, businessType, or appVersion.",
+                    "description": "date (default), countryId, businessType, or appVersion.",
                 },
-                "export_type": {
-                    "type": "string",
-                    "enum": ["CSV", "EXCEL"],
-                    "description": "Export format. Default: CSV.",
-                },
+                "export_type": {"type": "string", "enum": ["CSV", "EXCEL"], "description": "Default: CSV."},
             },
             "required": ["language", "start_time", "end_time"],
         },
     ),
     Tool(
         name="get_install_failure_report_url",
-        description=(
-            "Obtain the download URL of the app installation failure data report (CSV or Excel). "
-            "Max date range: 180 days."
-        ),
+        description="Get download URL for installation failure report (CSV or Excel). Max 180-day range.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -425,29 +367,22 @@ TOOLS: list[Tool] = [
                 "language": {
                     "type": "string",
                     "enum": ["zh-CN", "en-US", "ru-RU"],
-                    "description": "Language for report column headers.",
+                    "description": "Column header language.",
                 },
-                "start_time": {"type": "string", "description": "Start date in YYYYMMDD format (UTC)."},
-                "end_time": {"type": "string", "description": "End date in YYYYMMDD format (UTC)."},
+                "start_time": {"type": "string", "description": "YYYYMMDD (UTC)."},
+                "end_time": {"type": "string", "description": "YYYYMMDD (UTC)."},
                 "group_by": {
                     "type": "string",
-                    "description": "Grouping dimension: date (default), deviceName, downloadType, appVersion, or countryId.",
+                    "description": "date (default), deviceName, downloadType, appVersion, or countryId.",
                 },
-                "export_type": {
-                    "type": "string",
-                    "enum": ["CSV", "EXCEL"],
-                    "description": "Export format. Default: CSV.",
-                },
+                "export_type": {"type": "string", "enum": ["CSV", "EXCEL"], "description": "Default: CSV."},
             },
             "required": ["language", "start_time", "end_time"],
         },
     ),
     Tool(
         name="submit_app_with_file",
-        description=(
-            "Submit the app for release when the APK/AAB is hosted on your own server. "
-            "Huawei will download the file from the provided HTTPS URL during the review process."
-        ),
+        description="Submit app for release using a file hosted on your server (Huawei downloads via HTTPS during review).",
         inputSchema={
             "type": "object",
             "properties": {
@@ -459,15 +394,12 @@ TOOLS: list[Tool] = [
                 },
                 "files": {
                     "type": "array",
-                    "description": "Array of files hosted on your server.",
+                    "description": "Files on your server.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "file_name": {"type": "string"},
-                            "file_url": {
-                                "type": "string",
-                                "description": "HTTPS URL where Huawei can download the file.",
-                            },
+                            "file_url": {"type": "string", "description": "HTTPS URL for Huawei to fetch."},
                             "sha256": {"type": "string"},
                         },
                         "required": ["file_name", "file_url"],
@@ -476,10 +408,10 @@ TOOLS: list[Tool] = [
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
-                    "description": "1 = full release (default), 3 = phased release.",
+                    "description": "1=full (default), 3=phased.",
                 },
                 "release_percent": {"type": "integer", "minimum": 1, "maximum": 100},
-                "release_time": {"type": "integer", "description": "Scheduled release timestamp in Unix ms."},
+                "release_time": {"type": "integer", "description": "Scheduled release in Unix ms."},
                 "remark": {"type": "string"},
             },
             "required": ["file_type", "files"],
