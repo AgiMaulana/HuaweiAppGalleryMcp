@@ -1,16 +1,18 @@
 """
 File Upload APIs
 
-1. Get upload URL : GET  /publish/v2/upload-url
-2. Upload file    : POST {uploadUrl}          (single, ≤4 GB)
-3. Upload chunks  : POST {chunkUploadUrl}     (multi-part, >4 GB)
-4. Attach files   : PUT  /publish/v2/app-file-info
+1. Get upload URL      : GET  /publish/v2/upload-url
+2. Upload file         : POST {uploadUrl}          (single, ≤4 GB)
+3. Upload chunks       : POST {chunkUploadUrl}     (multi-part, >4 GB)
+4. Attach files        : PUT  /publish/v2/app-file-info
+5. Query compile status: GET  /publish/v2/package/compile/status
 
 Docs:
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-upload-url-new-0000001111685200
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-upload-file-new-0000001111845090
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-obbfile-upload-0000001158245067
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-app-file-info-0000001111685202
+    https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-query-aabfile-0000001111685206
 """
 
 import math
@@ -58,7 +60,7 @@ async def upload_file(
     """
     Upload a single file (≤4 GB).
 
-    Returns the fileDestUlr (destination URL) reported by Huawei.
+    Returns the fileDestUrl (destination URL) reported by Huawei.
     """
     file_name = file_path.name
     file_bytes = file_path.read_bytes()
@@ -82,7 +84,7 @@ async def upload_file_in_chunks(
     """
     Upload a large file (>4 GB) in 5 MB chunks.
 
-    Returns the fileDestUlr after all chunks are uploaded.
+    Returns the fileDestUrl after all chunks are uploaded.
     """
     file_name = file_path.name
     file_size = file_path.stat().st_size
@@ -126,7 +128,7 @@ async def update_app_file_info(
     Attach uploaded files to the app draft.
 
     file_type: 1=APK, 2=RPK, 5=AAB
-    files: list of {"fileName": ..., "fileDestUlr": ..., "sha256": ...}
+    files: list of {"fileName": ..., "fileDestUrl": ..., "sha256": ...}
     """
     token = await get_access_token(config)
     async with httpx.AsyncClient() as client:
@@ -135,6 +137,26 @@ async def update_app_file_info(
             params={"appId": app_id},
             headers=build_auth_headers(token, config.client_id),
             json={"fileType": file_type, "files": files},
+        )
+    return _handle(response)
+
+
+async def query_compile_status(
+    config: AuthConfig,
+    app_id: str,
+    pkg_ids: list[str],
+) -> dict[str, Any]:
+    """
+    Query the compilation status of one or more AAB packages.
+
+    pkg_ids: list of app package IDs returned when the file was attached.
+    """
+    token = await get_access_token(config)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BASE_URL}/package/compile/status",
+            params={"appId": app_id, "pkgIds": ",".join(pkg_ids)},
+            headers=build_auth_headers(token, config.client_id),
         )
     return _handle(response)
 

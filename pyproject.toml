@@ -1,6 +1,6 @@
 [project]
 name = "huawei-app-gallery-mcp"
-version = "1.0.4"
+version = "1.1.0"
 description = "MCP server for managing app publishing on Huawei AppGallery Connect"
 readme = "README.md"
 license = { text = "MIT" }

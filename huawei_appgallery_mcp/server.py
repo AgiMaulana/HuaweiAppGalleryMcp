@@ -38,11 +38,23 @@ from huawei_appgallery_mcp.api.language_info import (
 from huawei_appgallery_mcp.api.file_upload import (
     CHUNK_THRESHOLD,
     get_upload_url,
+    query_compile_status,
     update_app_file_info,
     upload_file,
     upload_file_in_chunks,
 )
-from huawei_appgallery_mcp.api.publish import submit_app, submit_app_with_file
+from huawei_appgallery_mcp.api.publish import (
+    change_phased_release_state,
+    set_gms_dependency,
+    submit_app,
+    submit_app_with_file,
+    update_phased_release,
+    update_release_time,
+)
+from huawei_appgallery_mcp.api.report import (
+    get_download_report_url,
+    get_install_failure_report_url,
+)
 
 app = Server("huawei-appgallery-mcp")
 
@@ -243,7 +255,7 @@ TOOLS: list[Tool] = [
         description=(
             "Submit the app for review and release on Huawei AppGallery. "
             "All app info and file info must be saved before calling this. "
-            "Supports full release, phased (grey) release, and scheduled release."
+            "Supports full release, phased (grey) release, scheduled release, and channel-specific release (e.g. open testing via channel_id=2)."
         ),
         inputSchema={
             "type": "object",
@@ -265,7 +277,169 @@ TOOLS: list[Tool] = [
                     "description": "Scheduled release timestamp in Unix milliseconds. Omit for immediate.",
                 },
                 "remark": {"type": "string", "description": "Internal release notes (not shown to users)."},
+                "channel_id": {
+                    "type": "integer",
+                    "description": "Optional channel ID. Use 2 for open testing.",
+                },
             },
+        },
+    ),
+    Tool(
+        name="change_phased_release_state",
+        description="Change the release status of an app in phased (grey) release — proceed, roll back, or stop.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "state": {
+                    "type": "string",
+                    "description": "RELEASE = proceed, ROLLBACK = roll back, GRAY_TERMINATED = stop phased release.",
+                },
+                "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
+                "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
+                "phased_release_percent": {"type": "string", "description": "Rollout percentage, e.g. \"50.00\"."},
+            },
+            "required": ["state"],
+        },
+    ),
+    Tool(
+        name="update_phased_release",
+        description="Change a phased release to full release, or update the phased release schedule/percentage.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "state": {"type": "string", "description": "Release state, e.g. RELEASE."},
+                "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
+                "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
+                "phased_release_percent": {"type": "string", "description": "Rollout percentage, e.g. \"50.00\"."},
+                "release_type": {
+                    "type": "integer",
+                    "enum": [1, 3],
+                    "description": "1 = convert to full release, 3 = keep as phased (default).",
+                },
+            },
+            "required": ["state"],
+        },
+    ),
+    Tool(
+        name="update_release_time",
+        description=(
+            "Update the scheduled release time of a version. "
+            "Only callable when the app is in Releasing state."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "change_type": {
+                    "type": "integer",
+                    "enum": [1, 2, 3],
+                    "description": "1 = release immediately, 2 = release as scheduled, 3 = update scheduled time.",
+                },
+                "release_time": {
+                    "type": "string",
+                    "description": "UTC datetime string, e.g. 2026-04-01T10:00:00+0800. Required for change_type 2 or 3.",
+                },
+                "release_type": {
+                    "type": "integer",
+                    "enum": [1, 3],
+                    "description": "1 = full release (default), 3 = phased.",
+                },
+            },
+            "required": ["change_type"],
+        },
+    ),
+    Tool(
+        name="set_gms_dependency",
+        description="Report whether the app depends on GMS (Google Mobile Services) to AppGallery Connect.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "need_gms": {
+                    "type": "integer",
+                    "enum": [0, 1],
+                    "description": "0 = does not depend on GMS, 1 = depends on GMS.",
+                },
+            },
+            "required": ["need_gms"],
+        },
+    ),
+    Tool(
+        name="query_compile_status",
+        description="Query the AAB compilation status for one or more app package IDs returned after uploading.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "pkg_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of app package IDs to query.",
+                },
+            },
+            "required": ["pkg_ids"],
+        },
+    ),
+    Tool(
+        name="get_download_report_url",
+        description=(
+            "Obtain the download URL of the app download and installation report (CSV or Excel). "
+            "Max date range: 180 days."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "language": {
+                    "type": "string",
+                    "enum": ["zh-CN", "en-US", "ru-RU"],
+                    "description": "Language for report column headers.",
+                },
+                "start_time": {"type": "string", "description": "Start date in YYYYMMDD format (UTC)."},
+                "end_time": {"type": "string", "description": "End date in YYYYMMDD format (UTC)."},
+                "group_by": {
+                    "type": "string",
+                    "description": "Grouping dimension: date (default), countryId, businessType, or appVersion.",
+                },
+                "export_type": {
+                    "type": "string",
+                    "enum": ["CSV", "EXCEL"],
+                    "description": "Export format. Default: CSV.",
+                },
+            },
+            "required": ["language", "start_time", "end_time"],
+        },
+    ),
+    Tool(
+        name="get_install_failure_report_url",
+        description=(
+            "Obtain the download URL of the app installation failure data report (CSV or Excel). "
+            "Max date range: 180 days."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "app_id": _APP_ID_PROP,
+                "language": {
+                    "type": "string",
+                    "enum": ["zh-CN", "en-US", "ru-RU"],
+                    "description": "Language for report column headers.",
+                },
+                "start_time": {"type": "string", "description": "Start date in YYYYMMDD format (UTC)."},
+                "end_time": {"type": "string", "description": "End date in YYYYMMDD format (UTC)."},
+                "group_by": {
+                    "type": "string",
+                    "description": "Grouping dimension: date (default), deviceName, downloadType, appVersion, or countryId.",
+                },
+                "export_type": {
+                    "type": "string",
+                    "enum": ["CSV", "EXCEL"],
+                    "description": "Export format. Default: CSV.",
+                },
+            },
+            "required": ["language", "start_time", "end_time"],
         },
     ),
     Tool(
@@ -421,7 +595,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 config,
                 app_id,
                 args["file_type"],
-                [{"fileName": file_name, "fileDestUlr": dest_url}],
+                [{"fileName": file_name, "fileDestUrl": dest_url}],
             )
             result["_uploadedFileUrl"] = dest_url
             return result
@@ -430,7 +604,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             api_files = [
                 {
                     "fileName": f["file_name"],
-                    "fileDestUlr": f["file_dest_url"],
+                    "fileDestUrl": f["file_dest_url"],
                     **({"sha256": f["sha256"]} if "sha256" in f else {}),
                 }
                 for f in args["files"]
@@ -451,6 +625,73 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 release_percent=args.get("release_percent"),
                 release_time=args.get("release_time"),
                 remark=args.get("remark"),
+                channel_id=args.get("channel_id"),
+            )
+
+        case "change_phased_release_state":
+            return await change_phased_release_state(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                state=args["state"],
+                phased_release_start_time=args.get("phased_release_start_time"),
+                phased_release_end_time=args.get("phased_release_end_time"),
+                phased_release_percent=args.get("phased_release_percent"),
+            )
+
+        case "update_phased_release":
+            return await update_phased_release(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                state=args["state"],
+                phased_release_start_time=args.get("phased_release_start_time"),
+                phased_release_end_time=args.get("phased_release_end_time"),
+                phased_release_percent=args.get("phased_release_percent"),
+                release_type=args.get("release_type", 3),
+            )
+
+        case "update_release_time":
+            return await update_release_time(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                change_type=args["change_type"],
+                release_time=args.get("release_time"),
+                release_type=args.get("release_type", 1),
+            )
+
+        case "set_gms_dependency":
+            return await set_gms_dependency(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                need_gms=args["need_gms"],
+            )
+
+        case "query_compile_status":
+            return await query_compile_status(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                args["pkg_ids"],
+            )
+
+        case "get_download_report_url":
+            return await get_download_report_url(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                language=args["language"],
+                start_time=args["start_time"],
+                end_time=args["end_time"],
+                group_by=args.get("group_by"),
+                export_type=args.get("export_type"),
+            )
+
+        case "get_install_failure_report_url":
+            return await get_install_failure_report_url(
+                config,
+                config.resolve_app_id(args.get("app_id")),
+                language=args["language"],
+                start_time=args["start_time"],
+                end_time=args["end_time"],
+                group_by=args.get("group_by"),
+                export_type=args.get("export_type"),
             )
 
         case "submit_app_with_file":

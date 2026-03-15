@@ -7,8 +7,13 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for man
 - Query and update app metadata (name, description, category, ratings, support contacts)
 - Manage localized store listings per language
 - Upload APK / AAB files with automatic chunked upload for large files (>4 GB)
-- Submit apps for full release, phased (grey) release, or scheduled release
+- Submit apps for full release, phased (grey) release, scheduled release, or open testing (`channel_id=2`)
 - Submit apps when the binary is hosted on your own server
+- Manage phased release lifecycle (state changes, percentage updates)
+- Query AAB compilation status
+- Update scheduled release time
+- Set GMS dependency flag
+- Obtain download/installation and install-failure report URLs
 
 ## Installation
 
@@ -97,8 +102,15 @@ All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from
 | `get_upload_url` | Obtain a pre-signed upload URL and auth code before uploading a file |
 | `upload_app_file` | Upload an APK/AAB from local disk and attach it to the app draft (auto-chunked for >4 GB) |
 | `update_app_file_info` | Manually attach already-uploaded files to the app draft |
-| `submit_app` | Submit the app for review and release |
+| `query_compile_status` | Query AAB compilation status for one or more package IDs |
+| `submit_app` | Submit the app for review and release (supports full, phased, scheduled, and open testing via `channel_id=2`) |
 | `submit_app_with_file` | Submit when the binary is hosted on your own server |
+| `change_phased_release_state` | Change phased release status: proceed, roll back, or stop |
+| `update_phased_release` | Convert phased release to full release or update the rollout schedule/percentage |
+| `update_release_time` | Update the scheduled release time (only when app is in Releasing state) |
+| `set_gms_dependency` | Report whether the app depends on GMS |
+| `get_download_report_url` | Get download URL for the app download & installation report (CSV/Excel, max 180 days) |
+| `get_install_failure_report_url` | Get download URL for the installation failure report (CSV/Excel, max 180 days) |
 
 ## Usage Examples
 
@@ -110,6 +122,10 @@ All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from
 
 > Submit the app for a phased release to 20% of users.
 
+**Open testing:**
+
+> Submit the app for open testing (channel_id=2).
+
 **Update release notes:**
 
 > Update the English release notes to "Bug fixes and performance improvements".
@@ -117,6 +133,10 @@ All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from
 **Scheduled release:**
 
 > Submit the app for release on March 20, 2026 at 10:00 UTC.
+
+**Download report:**
+
+> Get the download and installation report URL for the last 30 days in English CSV format.
 
 ## Publishing Workflow
 
