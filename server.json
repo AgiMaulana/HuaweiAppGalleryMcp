@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AgiMaulana/HuaweiAppGalleryMcp",
+  "description": "Huawei AppGallery Connect MCP: upload APK/AAB, update metadata, submit and manage app releases.",
+  "repository": {
+    "url": "https://github.com/AgiMaulana/HuaweiAppGalleryMcp",
+    "source": "github"
+  },
+  "version": "1.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "huawei-app-gallery-mcp",
+      "version": "1.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "HUAWEI_CLIENT_ID",
+          "description": "Huawei AppGallery Connect API Client ID (AGC Console → Users & Permissions → API key → Connect API)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "HUAWEI_CLIENT_SECRET",
+          "description": "Huawei AppGallery Connect API Client Secret",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "HUAWEI_APP_ID",
+          "description": "Default App ID — when set, all tools can omit the app_id argument",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

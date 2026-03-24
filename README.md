@@ -1,5 +1,7 @@
 # Huawei AppGallery MCP
 
+<!-- mcp-name: io.github.AgiMaulana/HuaweiAppGalleryMcp -->
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for managing app publishing on **Huawei AppGallery Connect**. Integrates directly with Claude Desktop or any MCP-compatible client.
 
 ## Features
