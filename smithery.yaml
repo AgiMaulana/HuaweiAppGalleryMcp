@@ -1,0 +1,31 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - clientId
+      - clientSecret
+    properties:
+      clientId:
+        type: string
+        description: >-
+          Huawei AppGallery Connect API Client ID.
+          Generate one at AGC Console → Users & Permissions → API key → Connect API → Create (App manager role).
+      clientSecret:
+        type: string
+        description: Huawei AppGallery Connect API Client Secret (paired with clientId above).
+      appId:
+        type: string
+        description: >-
+          Default App ID. When set, every tool can omit the app_id argument.
+          Find it at AGC Console → your app → App information → App ID.
+  commandFunction: |-
+    (config) => ({
+      command: "uvx",
+      args: ["huawei-app-gallery-mcp"],
+      env: {
+        HUAWEI_CLIENT_ID: config.clientId,
+        HUAWEI_CLIENT_SECRET: config.clientSecret,
+        ...(config.appId ? { HUAWEI_APP_ID: config.appId } : {})
+      }
+    })
