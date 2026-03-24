@@ -19,6 +19,19 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for man
 
 ## Installation
 
+### Via MCP Registry (recommended)
+
+**Claude Code:**
+
+```bash
+claude mcp add --from-registry io.github.AgiMaulana/HuaweiAppGalleryMcp
+```
+
+**Other MCP clients:**
+Find it at [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io) — search for `huawei-appgallery`.
+
+### Manual installation
+
 ```bash
 pip install huawei-app-gallery-mcp
 ```
@@ -52,7 +65,9 @@ HUAWEI_CLIENT_SECRET=your_connect_api_client_secret
 HUAWEI_APP_ID=your_app_id
 ```
 
-### 3. Connect to Claude Desktop
+### 3. Connect to your MCP client (manual install only)
+
+#### Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
@@ -71,7 +86,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-### Connect to Claude Code (machine-level)
+#### Claude Code (machine-level, manual install only)
 
 Create `/Library/Application Support/ClaudeCode/managed-mcp.json` (macOS) or `/etc/claude-code/managed-mcp.json` (Linux):
 
