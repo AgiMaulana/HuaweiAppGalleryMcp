@@ -3,7 +3,10 @@
 <!-- mcp-name: io.github.AgiMaulana/HuaweiAppGalleryMcp -->
 
 [![Huawei App Gallery MCP server](https://glama.ai/mcp/servers/AgiMaulana/HuaweiAppGalleryMcp/badges/card.svg)](https://glama.ai/mcp/servers/AgiMaulana/HuaweiAppGalleryMcp)
+
 [![HuaweiAppGalleryMcp MCP server](https://glama.ai/mcp/servers/AgiMaulana/HuaweiAppGalleryMcp/badges/score.svg)](https://glama.ai/mcp/servers/AgiMaulana/HuaweiAppGalleryMcp)
+[![MCP Badge](https://lobehub.com/badge/mcp/agimaulana-huaweiappgallerymcp)](https://lobehub.com/mcp/agimaulana-huaweiappgallerymcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for managing app publishing on **Huawei AppGallery Connect**. Integrates directly with Claude Desktop or any MCP-compatible client.
 
