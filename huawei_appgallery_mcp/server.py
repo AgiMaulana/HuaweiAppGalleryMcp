@@ -21,6 +21,7 @@ from typing import Any
 # This lets users set credentials in a .env file without exporting them in the shell.
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass  # python-dotenv is optional; env vars can still be set directly
@@ -97,11 +98,23 @@ TOOLS: list[Tool] = [
                 "app_id": _APP_ID_PROP,
                 "default_lang": {"type": "string", "description": 'e.g. "en-US"'},
                 "app_name": {"type": "string"},
-                "app_desc": {"type": "string", "description": "Full store description."},
+                "app_desc": {
+                    "type": "string",
+                    "description": "Full store description.",
+                },
                 "brief_desc": {"type": "string", "description": "Short tagline."},
-                "privacy_policy": {"type": "string", "description": "Privacy policy URL."},
-                "category_id": {"type": "string", "description": "Primary category ID."},
-                "sub_category_id": {"type": "string", "description": "Sub-category ID."},
+                "privacy_policy": {
+                    "type": "string",
+                    "description": "Privacy policy URL.",
+                },
+                "category_id": {
+                    "type": "string",
+                    "description": "Primary category ID.",
+                },
+                "sub_category_id": {
+                    "type": "string",
+                    "description": "Sub-category ID.",
+                },
                 "cs_email": {"type": "string"},
                 "cs_phone": {"type": "string"},
                 "cs_url": {"type": "string"},
@@ -114,7 +127,6 @@ TOOLS: list[Tool] = [
             },
         },
     ),
-
     # ── Language Info ──────────────────────────────────────────────────────────
     Tool(
         name="update_language_info",
@@ -123,11 +135,17 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "lang": {"type": "string", "description": 'BCP-47 tag, e.g. "en-US", "zh-CN".'},
+                "lang": {
+                    "type": "string",
+                    "description": 'BCP-47 tag, e.g. "en-US", "zh-CN".',
+                },
                 "app_name": {"type": "string"},
                 "app_desc": {"type": "string"},
                 "brief_desc": {"type": "string"},
-                "new_features": {"type": "string", "description": "What's new / release notes."},
+                "new_features": {
+                    "type": "string",
+                    "description": "What's new / release notes.",
+                },
             },
             "required": ["lang"],
         },
@@ -144,7 +162,6 @@ TOOLS: list[Tool] = [
             "required": ["lang"],
         },
     ),
-
     # ── File Upload ────────────────────────────────────────────────────────────
     Tool(
         name="get_upload_url",
@@ -158,7 +175,10 @@ TOOLS: list[Tool] = [
                     "enum": ["apk", "aab", "rpk", "pdf", "jpg", "jpeg", "png"],
                     "description": "File extension.",
                 },
-                "file_name": {"type": "string", "description": "File name (used to infer suffix if omitted)."},
+                "file_name": {
+                    "type": "string",
+                    "description": "File name (used to infer suffix if omitted).",
+                },
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
@@ -188,7 +208,10 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "app_id": _APP_ID_PROP,
-                "file_path": {"type": "string", "description": "Absolute local path to APK or AAB."},
+                "file_path": {
+                    "type": "string",
+                    "description": "Absolute local path to APK or AAB.",
+                },
                 "file_type": {
                     "type": "integer",
                     "enum": [1, 2, 5],
@@ -216,7 +239,10 @@ TOOLS: list[Tool] = [
                         "type": "object",
                         "properties": {
                             "file_name": {"type": "string"},
-                            "file_dest_url": {"type": "string", "description": "URL returned by upload endpoint."},
+                            "file_dest_url": {
+                                "type": "string",
+                                "description": "URL returned by upload endpoint.",
+                            },
                             "sha256": {"type": "string"},
                         },
                         "required": ["file_name", "file_dest_url"],
@@ -226,7 +252,6 @@ TOOLS: list[Tool] = [
             "required": ["file_type", "files"],
         },
     ),
-
     # ── Publishing ─────────────────────────────────────────────────────────────
     Tool(
         name="submit_app",
@@ -246,7 +271,10 @@ TOOLS: list[Tool] = [
                     "maximum": 100,
                     "description": "Rollout % for release_type=3.",
                 },
-                "release_time": {"type": "integer", "description": "Scheduled release in Unix ms; omit for immediate."},
+                "release_time": {
+                    "type": "integer",
+                    "description": "Scheduled release in Unix ms; omit for immediate.",
+                },
                 "remark": {"type": "string", "description": "Internal notes."},
                 "channel_id": {"type": "integer", "description": "2=open testing."},
                 "use_testing_version": {
@@ -279,9 +307,18 @@ TOOLS: list[Tool] = [
                     "type": "string",
                     "description": "RELEASE=proceed, ROLLBACK=roll back, GRAY_TERMINATED=stop.",
                 },
-                "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
-                "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
-                "phased_release_percent": {"type": "string", "description": 'Rollout %, e.g. "50.00".'},
+                "phased_release_start_time": {
+                    "type": "string",
+                    "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800.",
+                },
+                "phased_release_end_time": {
+                    "type": "string",
+                    "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800.",
+                },
+                "phased_release_percent": {
+                    "type": "string",
+                    "description": 'Rollout %, e.g. "50.00".',
+                },
             },
             "required": ["state"],
         },
@@ -294,9 +331,18 @@ TOOLS: list[Tool] = [
             "properties": {
                 "app_id": _APP_ID_PROP,
                 "state": {"type": "string", "description": "e.g. RELEASE"},
-                "phased_release_start_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800."},
-                "phased_release_end_time": {"type": "string", "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800."},
-                "phased_release_percent": {"type": "string", "description": 'Rollout %, e.g. "50.00".'},
+                "phased_release_start_time": {
+                    "type": "string",
+                    "description": "UTC datetime, e.g. 2026-05-01T00:00:00+0800.",
+                },
+                "phased_release_end_time": {
+                    "type": "string",
+                    "description": "UTC datetime, e.g. 2026-05-15T00:00:00+0800.",
+                },
+                "phased_release_percent": {
+                    "type": "string",
+                    "description": 'Rollout %, e.g. "50.00".',
+                },
                 "release_type": {
                     "type": "integer",
                     "enum": [1, 3],
@@ -381,7 +427,11 @@ TOOLS: list[Tool] = [
                     "type": "string",
                     "description": "date (default), countryId, businessType, or appVersion.",
                 },
-                "export_type": {"type": "string", "enum": ["CSV", "EXCEL"], "description": "Default: CSV."},
+                "export_type": {
+                    "type": "string",
+                    "enum": ["CSV", "EXCEL"],
+                    "description": "Default: CSV.",
+                },
             },
             "required": ["language", "start_time", "end_time"],
         },
@@ -404,7 +454,11 @@ TOOLS: list[Tool] = [
                     "type": "string",
                     "description": "date (default), deviceName, downloadType, appVersion, or countryId.",
                 },
-                "export_type": {"type": "string", "enum": ["CSV", "EXCEL"], "description": "Default: CSV."},
+                "export_type": {
+                    "type": "string",
+                    "enum": ["CSV", "EXCEL"],
+                    "description": "Default: CSV.",
+                },
             },
             "required": ["language", "start_time", "end_time"],
         },
@@ -428,7 +482,10 @@ TOOLS: list[Tool] = [
                         "type": "object",
                         "properties": {
                             "file_name": {"type": "string"},
-                            "file_url": {"type": "string", "description": "HTTPS URL for Huawei to fetch."},
+                            "file_url": {
+                                "type": "string",
+                                "description": "HTTPS URL for Huawei to fetch.",
+                            },
                             "sha256": {"type": "string"},
                         },
                         "required": ["file_name", "file_url"],
@@ -440,7 +497,10 @@ TOOLS: list[Tool] = [
                     "description": "1=full (default), 3=phased.",
                 },
                 "release_percent": {"type": "integer", "minimum": 1, "maximum": 100},
-                "release_time": {"type": "integer", "description": "Scheduled release in Unix ms."},
+                "release_time": {
+                    "type": "integer",
+                    "description": "Scheduled release in Unix ms.",
+                },
                 "remark": {"type": "string"},
             },
             "required": ["file_type", "files"],
@@ -463,7 +523,11 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     try:
         config = AuthConfig.from_env()
         result = await _dispatch(name, arguments, config)
-        return [TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+        return [
+            TextContent(
+                type="text", text=json.dumps(result, indent=2, ensure_ascii=False)
+            )
+        ]
     except Exception as exc:
         return [TextContent(type="text", text=f"Error: {exc}")]
 
@@ -562,9 +626,15 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
 
             # Step 1 – get upload URL
             url_data = await get_upload_url(config, app_id, suffix, file_name)
-            upload_url = url_data.get("uploadUrl") or url_data.get("info", {}).get("uploadUrl", "")
-            chunk_url = url_data.get("chunkUploadUrl") or url_data.get("info", {}).get("chunkUploadUrl", "")
-            auth_code = url_data.get("authCode") or url_data.get("info", {}).get("authCode", "")
+            upload_url = url_data.get("uploadUrl") or url_data.get("info", {}).get(
+                "uploadUrl", ""
+            )
+            chunk_url = url_data.get("chunkUploadUrl") or url_data.get("info", {}).get(
+                "chunkUploadUrl", ""
+            )
+            auth_code = url_data.get("authCode") or url_data.get("info", {}).get(
+                "authCode", ""
+            )
 
             # Step 2 – upload
             if file_size > CHUNK_THRESHOLD:
@@ -714,7 +784,9 @@ def main() -> None:
 
     async def _run() -> None:
         async with stdio_server() as (read_stream, write_stream):
-            await app.run(read_stream, write_stream, app.create_initialization_options())
+            await app.run(
+                read_stream, write_stream, app.create_initialization_options()
+            )
 
     asyncio.run(_run())
 
