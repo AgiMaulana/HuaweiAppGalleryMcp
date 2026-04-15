@@ -35,12 +35,20 @@ async def submit_app(
     release_time: int | None = None,
     remark: str | None = None,
     channel_id: int | None = None,
+    use_testing_version: bool | None = None,
+    test_start_time: int | None = None,
+    test_end_time: int | None = None,
+    feedback_email: str | None = None,
 ) -> dict[str, Any]:
     """
     Submit the app for review and release on Huawei AppGallery.
 
     All app info and file info must already be saved before calling this.
     channel_id: optional channel (e.g. 2 = open testing).
+    use_testing_version: enable "Use testing version" for open testing.
+    test_start_time: Unix ms timestamp for test period start (must be >= current time).
+    test_end_time: Unix ms timestamp for test period end.
+    feedback_email: Email address for tester feedback.
     """
     token = await get_access_token(config)
 
@@ -55,6 +63,14 @@ async def submit_app(
         payload["releaseTime"] = release_time
     if remark is not None:
         payload["remark"] = remark
+    if use_testing_version is not None:
+        payload["useTestingVersion"] = use_testing_version
+    if test_start_time is not None:
+        payload["testStartTime"] = test_start_time
+    if test_end_time is not None:
+        payload["testEndTime"] = test_end_time
+    if feedback_email is not None:
+        payload["feedbackEmail"] = feedback_email
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
