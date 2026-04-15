@@ -169,6 +169,19 @@ TOOLS: list[Tool] = [
         },
     ),
     Tool(
+        name="upload_file",
+        description="Upload a file to AppGallery using a pre-signed URL (Step 2 of upload flow). Returns fileDestUrl for use in update_app_file_info.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Absolute local path to the file to upload."},
+                "upload_url": {"type": "string", "description": "Pre-signed upload URL from get_upload_url."},
+                "auth_code": {"type": "string", "description": "Auth code from get_upload_url."},
+            },
+            "required": ["file_path", "upload_url", "auth_code"],
+        },
+    ),
+    Tool(
         name="upload_app_file",
         description="Upload APK/AAB from local disk to AppGallery (get URL → upload, auto-chunked >4 GB → attach to draft).",
         inputSchema={
@@ -217,7 +230,7 @@ TOOLS: list[Tool] = [
     # ── Publishing ─────────────────────────────────────────────────────────────
     Tool(
         name="submit_app",
-        description="Submit app for review/release. Supports full, phased, scheduled, and channel releases (channel_id=2 for open testing). Save all info first.",
+        description="Submit app for review/release. Supports full, phased, scheduled, channel releases, and open testing (channel_id=2). Save all info first.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -236,6 +249,22 @@ TOOLS: list[Tool] = [
                 "release_time": {"type": "integer", "description": "Scheduled release in Unix ms; omit for immediate."},
                 "remark": {"type": "string", "description": "Internal notes."},
                 "channel_id": {"type": "integer", "description": "2=open testing."},
+                "use_testing_version": {
+                    "type": "boolean",
+                    "description": "Enable 'Use testing version' for open testing.",
+                },
+                "test_start_time": {
+                    "type": "integer",
+                    "description": "Unix ms timestamp for test period start (must be >= current time).",
+                },
+                "test_end_time": {
+                    "type": "integer",
+                    "description": "Unix ms timestamp for test period end.",
+                },
+                "feedback_email": {
+                    "type": "string",
+                    "description": "Email address for tester feedback.",
+                },
             },
         },
     ),
@@ -500,6 +529,27 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 release_type=args.get("release_type", 1),
             )
 
+        case "upload_file":
+            file_path = Path(args["file_path"])
+            if not file_path.exists():
+                raise FileNotFoundError(f"File not found: {file_path}")
+            
+            file_size = file_path.stat().st_size
+            upload_url = args["upload_url"]
+            auth_code = args["auth_code"]
+            
+            # For simplicity, we use chunk upload if file > CHUNK_THRESHOLD
+            # But since we don't have chunk_upload_url here, we'll use regular upload
+            # If file is too large, user should use get_upload_url to get chunkUploadUrl
+            if file_size > CHUNK_THRESHOLD:
+                raise ValueError(
+                    f"File size ({file_size / (1024*1024*1024):.2f} GB) exceeds 4 GB limit. "
+                    "For large files, use upload_app_file tool which handles chunked upload automatically."
+                )
+            
+            dest_url = await upload_file(upload_url, auth_code, file_path)
+            return {"fileDestUrl": dest_url, "fileName": file_path.name}
+
         case "upload_app_file":
             file_path = Path(args["file_path"])
             if not file_path.exists():
@@ -558,6 +608,10 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 release_time=args.get("release_time"),
                 remark=args.get("remark"),
                 channel_id=args.get("channel_id"),
+                use_testing_version=args.get("use_testing_version"),
+                test_start_time=args.get("test_start_time"),
+                test_end_time=args.get("test_end_time"),
+                feedback_email=args.get("feedback_email"),
             )
 
         case "change_phased_release_state":
