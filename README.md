@@ -175,6 +175,10 @@ Update app info  →  Update language info  →  Upload APK/AAB  →  Submit app
 2. Use `upload_app_file` to upload the binary (handles chunking automatically)
 3. Use `submit_app` to trigger review and release
 
+## Package Release Workflow
+
+For package release instructions, see [docs/RELEASE.md](/Users/agi.maulana/Documents/Workspace/HuaweiAppGalleryMcp/docs/RELEASE.md).
+
 ## API Reference
 
 This server wraps the [AppGallery Connect Publishing API](https://developer.huawei.com/consumer/en/doc/AppGallery-connect-Guides/agcapi-getstarted-0000001111845062).

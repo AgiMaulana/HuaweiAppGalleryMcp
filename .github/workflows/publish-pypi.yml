@@ -5,12 +5,67 @@ on:
     types: [published]
 
 jobs:
-  build:
-    name: Build distribution
+  validate-release:
+    name: Validate release metadata
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Validate release branch and package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TARGET: ${{ github.event.release.target_commitish }}
+        run: |
+          python <<'PY'
+          import os
+          import pathlib
+          import sys
+
+          try:
+              import tomllib
+          except ModuleNotFoundError:
+              import tomli as tomllib
+
+          tag = os.environ["RELEASE_TAG"]
+          target = os.environ["RELEASE_TARGET"]
+
+          if not tag.startswith("v"):
+              print(f"Release tag must start with 'v', got: {tag}", file=sys.stderr)
+              sys.exit(1)
+
+          if not target.startswith("release/"):
+              print(
+                  "PyPI publish is only allowed from a release branch target. "
+                  f"Expected release/*, got: {target}",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          expected_tag = f"v{version}"
+          if tag != expected_tag:
+              print(
+                  "Release tag does not match package version in pyproject.toml. "
+                  f"Expected {expected_tag}, got {tag}",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          print(f"Validated release target {target} and package version {version}.")
+          PY
+
+  build:
+    name: Build distribution
+    needs: validate-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v5

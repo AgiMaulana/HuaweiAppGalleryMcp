@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release PyPI"
+  short_description: "Cut and publish PyPI release branches"
+  default_prompt: "Use $release-pypi to cut a release branch, bump the package version, tag it, and publish the GitHub Release for this repo."
