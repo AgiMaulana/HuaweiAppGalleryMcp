@@ -7,3 +7,7 @@ build/
 .env
 *.DS_Store
 .claude/
+.mcpregistry_github_token
+.mcpregistry_registry_token
+.qwen/
+.serena/

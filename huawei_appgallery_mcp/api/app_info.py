@@ -22,13 +22,17 @@ async def query_app_info(
     config: AuthConfig,
     app_id: str,
     release_type: Literal[1, 3] = 1,
+    channel_id: int | None = None,
 ) -> dict[str, Any]:
     """Query the current metadata of an app."""
     token = await get_access_token(config)
+    params: dict[str, Any] = {"appId": app_id, "releaseType": release_type}
+    if channel_id is not None:
+        params["channelId"] = channel_id
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{BASE_URL}/app-info",
-            params={"appId": app_id, "releaseType": release_type},
+            params=params,
             headers=build_auth_headers(token, config.client_id),
         )
     return _handle(response)

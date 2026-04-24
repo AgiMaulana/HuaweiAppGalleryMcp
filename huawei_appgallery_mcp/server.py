@@ -76,7 +76,7 @@ TOOLS: list[Tool] = [
     # ── App Info ──────────────────────────────────────────────────────────────
     Tool(
         name="query_app_info",
-        description="Query app metadata (name, description, category, content rating) from AppGallery Connect.",
+        description="Query app metadata (name, description, category, content rating) from AppGallery Connect. Optionally scope to a release channel with channel_id=2 for open testing.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -85,6 +85,10 @@ TOOLS: list[Tool] = [
                     "type": "integer",
                     "enum": [1, 3],
                     "description": "1=formal (default), 3=phased/grey.",
+                },
+                "channel_id": {
+                    "type": "integer",
+                    "description": "Optional channel ID to query a specific release channel. Use 2 for open testing.",
                 },
             },
         },
@@ -540,6 +544,7 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
                 config,
                 config.resolve_app_id(args.get("app_id")),
                 release_type=args.get("release_type", 1),
+                channel_id=args.get("channel_id"),
             )
 
         case "update_app_info":
