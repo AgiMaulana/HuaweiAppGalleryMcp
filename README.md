@@ -118,7 +118,7 @@ All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from
 
 | Tool | Description |
 |---|---|
-| `query_app_info` | Query current app metadata (name, description, category, ratings, etc.) |
+| `query_app_info` | Query current app metadata (name, description, category, ratings, etc.), optionally for a specific release channel via `channel_id` |
 | `update_app_info` | Update app metadata in the AppGallery Connect draft |
 | `update_language_info` | Add or update a localized store listing for a specific language |
 | `delete_language_info` | Remove a localized store listing |
@@ -148,6 +148,10 @@ All tools accept an optional `app_id` argument. If omitted, `HUAWEI_APP_ID` from
 **Open testing:**
 
 > Submit the app for open testing (channel_id=2).
+
+**Inspect open testing:**
+
+> Query the app metadata for the open testing channel with `query_app_info(channel_id=2)`.
 
 **Update release notes:**
 
