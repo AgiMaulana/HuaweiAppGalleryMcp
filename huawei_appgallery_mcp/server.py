@@ -14,6 +14,7 @@ Configuration via environment variables (set in .env or MCP config env block):
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,13 @@ from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
 from huawei_appgallery_mcp.auth import AuthConfig
+from huawei_appgallery_mcp.errors import (
+    APIError,
+    AppGalleryError,
+    AuthError,
+    NetworkError,
+    ValidationError,
+)
 from huawei_appgallery_mcp.api.app_info import query_app_info, update_app_info
 from huawei_appgallery_mcp.api.language_info import (
     update_language_info,
@@ -56,6 +64,8 @@ from huawei_appgallery_mcp.api.report import (
     get_download_report_url,
     get_install_failure_report_url,
 )
+
+logger = logging.getLogger(__name__)
 
 app = Server("huawei-appgallery-mcp")
 
@@ -526,14 +536,54 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     try:
         config = AuthConfig.from_env()
+        logger.info("Tool called: %s, app_id=%s", name, arguments.get("app_id", config.default_app_id))
         result = await _dispatch(name, arguments, config)
+        logger.info("Tool succeeded: %s", name)
         return [
             TextContent(
                 type="text", text=json.dumps(result, indent=2, ensure_ascii=False)
             )
         ]
+    except AuthError as exc:
+        logger.error("Auth error in tool %s: %s", name, exc)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "auth_error",
+            "message": str(exc),
+            "hint": "Check HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET environment variables.",
+        }))]
+    except ValidationError as exc:
+        logger.warning("Validation error in tool %s: %s", name, exc)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "validation_error",
+            "message": str(exc),
+        }))]
+    except APIError as exc:
+        logger.error("API error in tool %s: code=%d msg=%s", name, exc.code, exc.message)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "api_error",
+            "code": exc.code,
+            "message": exc.message,
+        }))]
+    except NetworkError as exc:
+        logger.error("Network error in tool %s: %s", name, exc)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "network_error",
+            "message": str(exc),
+            "hint": "The Huawei API is unreachable. Check your network connection.",
+        }))]
+    except AppGalleryError as exc:
+        logger.error("AppGallery error in tool %s: %s", name, exc)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "appgallery_error",
+            "message": str(exc),
+        }))]
     except Exception as exc:
-        return [TextContent(type="text", text=f"Error: {exc}")]
+        logger.exception("Unexpected error in tool %s", name)
+        return [TextContent(type="text", text=json.dumps({
+            "error": "internal_error",
+            "message": "An unexpected error occurred.",
+            "detail": str(exc),
+        }))]
 
 
 async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
@@ -786,6 +836,15 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
 
 def main() -> None:
     import asyncio
+    import os
+
+    log_level = os.environ.get("HUAWEI_LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=getattr(logging, log_level, logging.INFO),
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logger.info("Starting Huawei AppGallery MCP server")
 
     async def _run() -> None:
         async with stdio_server() as (read_stream, write_stream):

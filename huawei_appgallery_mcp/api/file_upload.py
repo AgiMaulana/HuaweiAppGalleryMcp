@@ -15,13 +15,17 @@ Docs:
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-query-aabfile-0000001111685206
 """
 
+import logging
 import math
 from pathlib import Path
 from typing import Any, Callable, Literal
 
 import httpx
 
+from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
 
@@ -49,7 +53,7 @@ async def get_upload_url(
             params={"appId": app_id, "suffix": suffix, "releaseType": release_type},
             headers=build_auth_headers(token, config.client_id),
         )
-    return _handle(response)
+    return handle_api_response(response)
 
 
 async def upload_file(
@@ -71,7 +75,7 @@ async def upload_file(
             data={"authCode": auth_code, "fileCount": "1"},
             files={"file": (file_name, file_bytes)},
         )
-    data = _handle(response)
+    data = handle_api_response(response)
     return _extract_dest_url(data)
 
 
@@ -107,7 +111,7 @@ async def upload_file_in_chunks(
                     },
                     files={"file": (file_name, chunk_data)},
                 )
-            data = _handle(response)
+            data = handle_api_response(response)
             if is_last:
                 dest_url = _extract_dest_url(data)
 
@@ -138,7 +142,7 @@ async def update_app_file_info(
             headers=build_auth_headers(token, config.client_id),
             json={"fileType": file_type, "files": files},
         )
-    return _handle(response)
+    return handle_api_response(response)
 
 
 async def query_compile_status(
@@ -158,20 +162,12 @@ async def query_compile_status(
             params={"appId": app_id, "pkgIds": ",".join(pkg_ids)},
             headers=build_auth_headers(token, config.client_id),
         )
-    return _handle(response)
+    return handle_api_response(response)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _handle(response: httpx.Response) -> dict[str, Any]:
-    response.raise_for_status()
-    data: dict[str, Any] = response.json()
-    if data.get("ret", {}).get("code", 0) != 0:
-        ret = data["ret"]
-        raise RuntimeError(f"AppGallery API error {ret['code']}: {ret.get('msg', '')}")
-    return data
 
 
 def _extract_dest_url(data: dict[str, Any]) -> str:

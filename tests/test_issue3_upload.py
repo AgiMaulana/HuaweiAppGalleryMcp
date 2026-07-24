@@ -10,6 +10,7 @@ from huawei_appgallery_mcp.api.file_upload import (
     upload_file,
     _extract_dest_url,
 )
+from huawei_appgallery_mcp.errors import APIError
 from huawei_appgallery_mcp.server import _dispatch
 
 
@@ -155,7 +156,7 @@ async def test_upload_file_handles_api_error():
     """Test that upload_file properly handles API errors."""
     with (
         patch("huawei_appgallery_mcp.api.file_upload.httpx.AsyncClient") as mock_client,
-        pytest.raises(RuntimeError, match="AppGallery API error"),
+        pytest.raises(APIError, match="AppGallery API error"),
     ):
         mock_client.return_value.__aenter__.return_value.post.return_value = mock_upload_response(
             code=204144641,

@@ -7,11 +7,16 @@ Docs:
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-obtain_token-0000001158365043
 """
 
+import logging
 import os
 import time
 from dataclasses import dataclass
 
 import httpx
+
+from huawei_appgallery_mcp.errors import AuthError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 # AppGallery Connect Publishing API token endpoint.
 # Requires Connect API credentials from:
@@ -36,7 +41,7 @@ class AuthConfig:
         client_id = os.environ.get("HUAWEI_CLIENT_ID", "")
         client_secret = os.environ.get("HUAWEI_CLIENT_SECRET", "")
         if not client_id or not client_secret:
-            raise EnvironmentError(
+            raise AuthError(
                 "HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET environment variables must be set."
             )
         return cls(
@@ -49,7 +54,7 @@ class AuthConfig:
         """Return app_id from the call argument, falling back to HUAWEI_APP_ID."""
         resolved = app_id or self.default_app_id
         if not resolved:
-            raise ValueError(
+            raise ValidationError(
                 "app_id is required. Pass it as a tool argument or set HUAWEI_APP_ID in your environment."
             )
         return resolved
@@ -76,7 +81,7 @@ async def get_access_token(config: AuthConfig) -> str:
 
     # connect-api wraps errors in a ret.code field instead of HTTP 4xx
     if "ret" in data and data["ret"].get("code", 0) != 0:
-        raise RuntimeError(
+        raise AuthError(
             f"Failed to obtain token: {data['ret'].get('msg', data['ret'])}\n"
             "Ensure HUAWEI_CLIENT_ID and HUAWEI_CLIENT_SECRET are AppGallery Connect "
             "API credentials (AGC Console → Users & Permissions → API key → Connect API)."
@@ -84,6 +89,7 @@ async def get_access_token(config: AuthConfig) -> str:
 
     _cached_token = data["access_token"]
     _token_expires_at = now + data["expires_in"]
+    logger.info("Token refreshed, expires in %ds", data["expires_in"])
     return _cached_token
 
 

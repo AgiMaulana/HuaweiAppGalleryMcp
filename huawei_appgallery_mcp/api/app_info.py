@@ -9,11 +9,15 @@ Docs:
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-app-info-update-0000001111685198
 """
 
+import logging
 from typing import Any, Literal
 
 import httpx
 
+from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
 
@@ -35,7 +39,7 @@ async def query_app_info(
             params=params,
             headers=build_auth_headers(token, config.client_id),
         )
-    return _handle(response)
+    return handle_api_response(response)
 
 
 async def update_app_info(
@@ -92,13 +96,4 @@ async def update_app_info(
             headers=build_auth_headers(token, config.client_id),
             json=payload,
         )
-    return _handle(response)
-
-
-def _handle(response: httpx.Response) -> dict[str, Any]:
-    response.raise_for_status()
-    data: dict[str, Any] = response.json()
-    if data.get("ret", {}).get("code", 0) != 0:
-        ret = data["ret"]
-        raise RuntimeError(f"AppGallery API error {ret['code']}: {ret.get('msg', '')}")
-    return data
+    return handle_api_response(response)
