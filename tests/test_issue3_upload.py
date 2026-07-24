@@ -7,10 +7,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from huawei_appgallery_mcp.api.file_upload import (
+    CHUNK_SIZE,
+    MAX_CHUNK_RETRIES,
     upload_file,
+    upload_file_in_chunks,
     _extract_dest_url,
 )
-from huawei_appgallery_mcp.errors import APIError
+from huawei_appgallery_mcp.errors import APIError, NetworkError
 from huawei_appgallery_mcp.server import _dispatch
 
 
@@ -264,3 +267,180 @@ async def test_upload_file_mcp_tool_large_file(mock_config):
                 mock_config,
             )
 
+
+# ---------------------------------------------------------------------------
+# Chunked upload tests (Stage 4.7)
+# ---------------------------------------------------------------------------
+
+
+def _chunk_response(dest_url=""):
+    """Build a mock httpx.Response for a successful chunk upload."""
+    resp = MagicMock()
+    resp.raise_for_status = MagicMock()
+    resp.json.return_value = {
+        "ret": {"code": 0, "msg": "success"},
+        "result": {
+            "UploadFileRsp": {
+                "fileDestUlr": dest_url or "https://example.com/dest/file.aab"
+            }
+        },
+    }
+    resp.elapsed = MagicMock()
+    resp.elapsed.total_seconds.return_value = 0.1
+    resp.request = MagicMock()
+    resp.request.method = "POST"
+    resp.request.url = "https://chunk-upload.example.com"
+    resp.status_code = 200
+    return resp
+
+
+@pytest.mark.asyncio
+async def test_upload_file_in_chunks_success():
+    """Two chunks, both succeed, dest_url returned."""
+    file_content = b"a" * 1000  # 1000 bytes
+
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".aab") as f:
+        f.write(file_content)
+        f.flush()
+        file_path = Path(f.name)
+
+    with (
+        patch("huawei_appgallery_mcp.api.file_upload.CHUNK_SIZE", 500),
+        patch(
+            "huawei_appgallery_mcp.api.file_upload.get_upload_client"
+        ) as mock_get_client,
+    ):
+        mock_client = MagicMock()
+        # Two chunks: chunk 1 (no dest_url), chunk 2 (last, returns dest_url)
+        mock_client.post = AsyncMock(
+            side_effect=[
+                _chunk_response(),
+                _chunk_response(dest_url="https://example.com/final.aab"),
+            ]
+        )
+        mock_get_client.return_value = mock_client
+
+        dest_url = await upload_file_in_chunks(
+            "https://chunk-upload.example.com",
+            "auth123",
+            file_path,
+        )
+
+        assert dest_url == "https://example.com/final.aab"
+        assert mock_client.post.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_upload_file_in_chunks_chunk_failure_retry():
+    """Chunk 1 fails once with NetworkError, succeeds on retry."""
+    file_content = b"b" * 1000
+
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".aab") as f:
+        f.write(file_content)
+        f.flush()
+        file_path = Path(f.name)
+
+    with (
+        patch("huawei_appgallery_mcp.api.file_upload.CHUNK_SIZE", 500),
+        patch(
+            "huawei_appgallery_mcp.api.file_upload.get_upload_client"
+        ) as mock_get_client,
+    ):
+        mock_client = MagicMock()
+        # Chunk 1: attempt 1 fails (NetworkError), attempt 2 succeeds
+        # Chunk 2 (last): succeeds with dest_url
+        mock_client.post = AsyncMock(
+            side_effect=[
+                NetworkError("transient error"),
+                _chunk_response(),
+                _chunk_response(dest_url="https://example.com/retry_ok.aab"),
+            ]
+        )
+        mock_get_client.return_value = mock_client
+
+        dest_url = await upload_file_in_chunks(
+            "https://chunk-upload.example.com",
+            "auth123",
+            file_path,
+        )
+
+        assert dest_url == "https://example.com/retry_ok.aab"
+        # 3 calls: 1 failed + 1 retry for chunk 1, + 1 for chunk 2
+        assert mock_client.post.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_upload_file_in_chunks_chunk_failure_exhausted():
+    """Chunk fails all MAX_CHUNK_RETRIES attempts, NetworkError raised."""
+    file_content = b"c" * 1000
+
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".aab") as f:
+        f.write(file_content)
+        f.flush()
+        file_path = Path(f.name)
+
+    with (
+        patch("huawei_appgallery_mcp.api.file_upload.CHUNK_SIZE", 500),
+        patch(
+            "huawei_appgallery_mcp.api.file_upload.get_upload_client"
+        ) as mock_get_client,
+    ):
+        mock_client = MagicMock()
+        # All attempts fail
+        mock_client.post = AsyncMock(
+            side_effect=NetworkError("persistent error")
+        )
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(NetworkError, match="persistent error"):
+            await upload_file_in_chunks(
+                "https://chunk-upload.example.com",
+                "auth123",
+                file_path,
+            )
+
+        # Should have tried MAX_CHUNK_RETRIES times
+        assert mock_client.post.call_count == MAX_CHUNK_RETRIES
+
+
+@pytest.mark.asyncio
+async def test_upload_file_in_chunks_calls_progress():
+    """on_progress callback receives correct bytes after each chunk."""
+    file_content = b"d" * 1000  # 1000 bytes, 2 chunks of 500
+
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".aab") as f:
+        f.write(file_content)
+        f.flush()
+        file_path = Path(f.name)
+
+    with (
+        patch("huawei_appgallery_mcp.api.file_upload.CHUNK_SIZE", 500),
+        patch(
+            "huawei_appgallery_mcp.api.file_upload.get_upload_client"
+        ) as mock_get_client,
+    ):
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(
+            side_effect=[
+                _chunk_response(),
+                _chunk_response(dest_url="https://example.com/progress.aab"),
+            ]
+        )
+        mock_get_client.return_value = mock_client
+
+        progress_calls = []
+
+        def on_progress(uploaded, total):
+            progress_calls.append((uploaded, total))
+
+        await upload_file_in_chunks(
+            "https://chunk-upload.example.com",
+            "auth123",
+            file_path,
+            on_progress=on_progress,
+        )
+
+        # 2 chunks: after chunk 1 (500 bytes), after chunk 2 (1000 bytes)
+        assert len(progress_calls) == 2
+        assert progress_calls[0] == (500, 1000)
+        assert progress_calls[1] == (1000, 1000)
