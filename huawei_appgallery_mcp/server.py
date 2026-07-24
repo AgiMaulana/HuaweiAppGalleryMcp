@@ -308,7 +308,12 @@ TOOLS: list[Tool] = [
                     "type": "string",
                     "description": "Email address for tester feedback.",
                 },
+                "confirm": {
+                    "type": "boolean",
+                    "description": "Explicit confirmation that you intend to submit the app for review/release. Must be true. This action is irreversible.",
+                },
             },
+            "required": ["confirm"],
         },
     ),
     Tool(
@@ -517,8 +522,12 @@ TOOLS: list[Tool] = [
                     "description": "Scheduled release in Unix ms.",
                 },
                 "remark": {"type": "string"},
+                "confirm": {
+                    "type": "boolean",
+                    "description": "Explicit confirmation that you intend to submit the app for review/release. Must be true. This action is irreversible.",
+                },
             },
-            "required": ["file_type", "files"],
+            "required": ["file_type", "files", "confirm"],
         },
     ),
 ]
@@ -599,6 +608,9 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "update_app_info":
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called update_app_info for app_id=%s", config.resolve_app_id(args.get("app_id")))
+                return {"dry_run": True, "operation": "update_app_info", "would_update": True}
             return await update_app_info(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -618,6 +630,9 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
 
         # ── Language Info ─────────────────────────────────────────────────────
         case "update_language_info":
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called update_language_info for lang=%s", args.get("lang"))
+                return {"dry_run": True, "operation": "update_language_info", "lang": args.get("lang")}
             return await update_language_info(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -629,6 +644,9 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "delete_language_info":
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called delete_language_info for lang=%s", args.get("lang"))
+                return {"dry_run": True, "operation": "delete_language_info", "lang": args.get("lang")}
             return await delete_language_info(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -726,6 +744,14 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
 
         # ── Publishing ────────────────────────────────────────────────────────
         case "submit_app":
+            if not args.get("confirm"):
+                raise ValidationError(
+                    "submit_app requires confirm=true. "
+                    "This action submits the app for review and release and cannot be undone."
+                )
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called submit_app for app_id=%s", config.resolve_app_id(args.get("app_id")))
+                return {"dry_run": True, "operation": "submit_app", "would_submit": True}
             return await submit_app(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -741,6 +767,9 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "change_phased_release_state":
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called change_phased_release_state state=%s", args.get("state"))
+                return {"dry_run": True, "operation": "change_phased_release_state", "state": args.get("state")}
             return await change_phased_release_state(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -751,6 +780,9 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "update_phased_release":
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called update_phased_release state=%s", args.get("state"))
+                return {"dry_run": True, "operation": "update_phased_release", "state": args.get("state")}
             return await update_phased_release(
                 config,
                 config.resolve_app_id(args.get("app_id")),
@@ -807,6 +839,14 @@ async def _dispatch(name: str, args: dict[str, Any], config: AuthConfig) -> Any:
             )
 
         case "submit_app_with_file":
+            if not args.get("confirm"):
+                raise ValidationError(
+                    "submit_app_with_file requires confirm=true. "
+                    "This action submits the app for review and release and cannot be undone."
+                )
+            if config.dry_run:
+                logger.warning("DRY RUN: would have called submit_app_with_file for app_id=%s", config.resolve_app_id(args.get("app_id")))
+                return {"dry_run": True, "operation": "submit_app_with_file", "would_submit": True}
             api_files = [
                 {
                     "fileName": f["file_name"],

@@ -52,6 +52,8 @@ def mock_config():
     config.client_id = "test_client_id"
     config.client_secret = "test_client_secret"
     config.default_app_id = "test_app_id"
+    config.api_base_url = "https://connect-api.cloud.huawei.com"
+    config.dry_run = False
     return config
 
 

@@ -28,8 +28,6 @@ from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
-
 
 async def submit_app(
     config: AuthConfig,
@@ -79,7 +77,7 @@ async def submit_app(
 
     client = get_client()
     response = await client.post(
-        f"{BASE_URL}/app-submit",
+        f"{config.api_base_url}/api/publish/v2/app-submit",
         params=params,
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -121,7 +119,7 @@ async def submit_app_with_file(
 
     client = get_client()
     response = await client.post(
-        f"{BASE_URL}/app-submit-with-file",
+        f"{config.api_base_url}/api/publish/v2/app-submit-with-file",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -153,7 +151,7 @@ async def change_phased_release_state(
         payload["phasedReleasePercent"] = phased_release_percent
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/phased-release/state",
+        f"{config.api_base_url}/api/publish/v2/phased-release/state",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -184,7 +182,7 @@ async def update_phased_release(
         payload["phasedReleasePercent"] = phased_release_percent
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/phased-release",
+        f"{config.api_base_url}/api/publish/v2/phased-release",
         params={"appId": app_id, "releaseType": release_type},
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -212,7 +210,7 @@ async def update_release_time(
         payload["releaseTime"] = release_time
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/on-shelf-time",
+        f"{config.api_base_url}/api/publish/v2/on-shelf-time",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -234,7 +232,7 @@ async def set_gms_dependency(
     token = await get_access_token(config)
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/properties/gms",
+        f"{config.api_base_url}/api/publish/v2/properties/gms",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json={"needGms": need_gms},

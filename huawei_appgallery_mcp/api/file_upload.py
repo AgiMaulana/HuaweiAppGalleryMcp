@@ -30,8 +30,6 @@ from huawei_appgallery_mcp.http_client import get_client, get_upload_client
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
-
 # Chunk size for large-file uploads: 5 MB
 CHUNK_SIZE = 5 * 1024 * 1024
 
@@ -52,7 +50,7 @@ async def get_upload_url(
     token = await get_access_token(config)
     client = get_client()
     response = await client.get(
-        f"{BASE_URL}/upload-url",
+        f"{config.api_base_url}/api/publish/v2/upload-url",
         params={"appId": app_id, "suffix": suffix, "releaseType": release_type},
         headers=build_auth_headers(token, config.client_id),
     )
@@ -165,7 +163,7 @@ async def update_app_file_info(
     token = await get_access_token(config)
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/app-file-info",
+        f"{config.api_base_url}/api/publish/v2/app-file-info",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json={"fileType": file_type, "files": files},
@@ -186,7 +184,7 @@ async def query_compile_status(
     token = await get_access_token(config)
     client = get_client()
     response = await client.get(
-        f"{BASE_URL}/package/compile/status",
+        f"{config.api_base_url}/api/publish/v2/package/compile/status",
         params={"appId": app_id, "pkgIds": ",".join(pkg_ids)},
         headers=build_auth_headers(token, config.client_id),
     )

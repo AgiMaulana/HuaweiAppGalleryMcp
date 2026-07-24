@@ -20,8 +20,6 @@ from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://connect-api.cloud.huawei.com/api/report/distribution-operation-quality/v1"
-
 
 async def get_download_report_url(
     config: AuthConfig,
@@ -54,7 +52,7 @@ async def get_download_report_url(
         params["exportType"] = export_type
     client = get_client()
     response = await client.get(
-        f"{BASE_URL}/appDownloadExport/{app_id}",
+        f"{config.api_base_url}/api/report/distribution-operation-quality/v1/appDownloadExport/{app_id}",
         params=params,
         headers=build_auth_headers(token, config.client_id),
     )
@@ -92,7 +90,7 @@ async def get_install_failure_report_url(
         params["exportType"] = export_type
     client = get_client()
     response = await client.get(
-        f"{BASE_URL}/appDownloadFailExport/{app_id}",
+        f"{config.api_base_url}/api/report/distribution-operation-quality/v1/appDownloadFailExport/{app_id}",
         params=params,
         headers=build_auth_headers(token, config.client_id),
     )

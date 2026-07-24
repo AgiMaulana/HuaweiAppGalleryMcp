@@ -20,8 +20,6 @@ from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
-
 
 async def query_app_info(
     config: AuthConfig,
@@ -36,7 +34,7 @@ async def query_app_info(
         params["channelId"] = channel_id
     client = get_client()
     response = await client.get(
-        f"{BASE_URL}/app-info",
+        f"{config.api_base_url}/api/publish/v2/app-info",
         params=params,
         headers=build_auth_headers(token, config.client_id),
     )
@@ -92,7 +90,7 @@ async def update_app_info(
 
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/app-info",
+        f"{config.api_base_url}/api/publish/v2/app-info",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json=payload,

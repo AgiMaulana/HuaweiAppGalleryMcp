@@ -36,6 +36,8 @@ class AuthConfig:
     client_id: str
     client_secret: str
     default_app_id: str | None = None  # from HUAWEI_APP_ID, optional
+    api_base_url: str = "https://connect-api.cloud.huawei.com"
+    dry_run: bool = False
 
     @classmethod
     def from_env(cls) -> "AuthConfig":
@@ -49,6 +51,11 @@ class AuthConfig:
             client_id=client_id,
             client_secret=client_secret,
             default_app_id=os.environ.get("HUAWEI_APP_ID") or None,
+            api_base_url=os.environ.get(
+                "HUAWEI_API_BASE_URL",
+                "https://connect-api.cloud.huawei.com",
+            ),
+            dry_run=os.environ.get("HUAWEI_DRY_RUN", "").lower() in ("1", "true", "yes"),
         )
 
     def resolve_app_id(self, app_id: str | None) -> str:
@@ -70,7 +77,7 @@ async def get_access_token(config: AuthConfig) -> str:
 
     client = get_client()
     response = await client.post(
-        TOKEN_URL,
+        f"{config.api_base_url}/api/oauth2/v1/token",
         json={
             "grant_type": "client_credentials",
             "client_id": config.client_id,

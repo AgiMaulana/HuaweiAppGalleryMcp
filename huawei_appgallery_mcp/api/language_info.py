@@ -20,8 +20,6 @@ from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://connect-api.cloud.huawei.com/api/publish/v2"
-
 
 async def update_language_info(
     config: AuthConfig,
@@ -48,7 +46,7 @@ async def update_language_info(
 
     client = get_client()
     response = await client.put(
-        f"{BASE_URL}/app-language-info",
+        f"{config.api_base_url}/api/publish/v2/app-language-info",
         params={"appId": app_id},
         headers=build_auth_headers(token, config.client_id),
         json=payload,
@@ -65,7 +63,7 @@ async def delete_language_info(
     token = await get_access_token(config)
     client = get_client()
     response = await client.delete(
-        f"{BASE_URL}/app-language-info",
+        f"{config.api_base_url}/api/publish/v2/app-language-info",
         params={"appId": app_id, "lang": lang},
         headers=build_auth_headers(token, config.client_id),
     )
