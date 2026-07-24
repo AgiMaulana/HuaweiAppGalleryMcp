@@ -16,6 +16,7 @@ import httpx
 
 from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +46,13 @@ async def update_language_info(
     if new_features is not None:
         payload["newFeatures"] = new_features
 
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/app-language-info",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/app-language-info",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -62,10 +63,10 @@ async def delete_language_info(
 ) -> dict[str, Any]:
     """Remove a localized store listing for a specific language."""
     token = await get_access_token(config)
-    async with httpx.AsyncClient() as client:
-        response = await client.delete(
-            f"{BASE_URL}/app-language-info",
-            params={"appId": app_id, "lang": lang},
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.delete(
+        f"{BASE_URL}/app-language-info",
+        params={"appId": app_id, "lang": lang},
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)

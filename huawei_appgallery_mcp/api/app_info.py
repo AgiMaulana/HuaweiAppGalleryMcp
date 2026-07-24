@@ -16,6 +16,7 @@ import httpx
 
 from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +34,12 @@ async def query_app_info(
     params: dict[str, Any] = {"appId": app_id, "releaseType": release_type}
     if channel_id is not None:
         params["channelId"] = channel_id
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/app-info",
-            params=params,
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.get(
+        f"{BASE_URL}/app-info",
+        params=params,
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)
 
 
@@ -89,11 +90,11 @@ async def update_app_info(
     if age_rating is not None:
         payload["ageRating"] = age_rating
 
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/app-info",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/app-info",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)

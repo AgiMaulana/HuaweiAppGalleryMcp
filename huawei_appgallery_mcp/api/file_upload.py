@@ -15,6 +15,7 @@ Docs:
     https://developer.huawei.com/consumer/en/doc/AppGallery-connect-References/agcapi-query-aabfile-0000001111685206
 """
 
+import asyncio
 import logging
 import math
 from pathlib import Path
@@ -24,6 +25,8 @@ import httpx
 
 from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+from huawei_appgallery_mcp.errors import NetworkError
+from huawei_appgallery_mcp.http_client import get_client, get_upload_client
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +50,12 @@ async def get_upload_url(
 ) -> dict[str, Any]:
     """Obtain a pre-signed upload URL and auth code from Huawei."""
     token = await get_access_token(config)
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/upload-url",
-            params={"appId": app_id, "suffix": suffix, "releaseType": release_type},
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.get(
+        f"{BASE_URL}/upload-url",
+        params={"appId": app_id, "suffix": suffix, "releaseType": release_type},
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)
 
 
@@ -64,19 +67,28 @@ async def upload_file(
     """
     Upload a single file (≤4 GB).
 
-    Returns the fileDestUrl (destination URL) reported by Huawei.
+    Streams the file in 5 MB chunks so memory usage stays constant
+    regardless of file size. Returns the fileDestUrl reported by Huawei.
     """
     file_name = file_path.name
-    file_bytes = file_path.read_bytes()
 
-    async with httpx.AsyncClient(timeout=600) as client:
-        response = await client.post(
-            upload_url,
-            data={"authCode": auth_code, "fileCount": "1"},
-            files={"file": (file_name, file_bytes)},
-        )
+    async def file_stream():
+        with file_path.open("rb") as f:
+            while chunk := f.read(CHUNK_SIZE):
+                yield chunk
+
+    client = get_upload_client()
+    response = await client.post(
+        upload_url,
+        data={"authCode": auth_code, "fileCount": "1"},
+        files={"file": (file_name, file_stream())},
+    )
     data = handle_api_response(response)
     return _extract_dest_url(data)
+
+
+# Max retries per chunk for resilient large-file upload
+MAX_CHUNK_RETRIES = 3
 
 
 async def upload_file_in_chunks(
@@ -86,7 +98,11 @@ async def upload_file_in_chunks(
     on_progress: Callable[[int, int], None] | None = None,
 ) -> str:
     """
-    Upload a large file (>4 GB) in 5 MB chunks.
+    Upload a large file (>4 GB) in 5 MB chunks with per-chunk retry.
+
+    Each chunk is retried up to MAX_CHUNK_RETRIES times on network errors
+    with exponential backoff, so a transient failure at chunk 1023 doesn't
+    restart the entire upload from chunk 1.
 
     Returns the fileDestUrl after all chunks are uploaded.
     """
@@ -95,25 +111,37 @@ async def upload_file_in_chunks(
     total_chunks = math.ceil(file_size / CHUNK_SIZE)
     dest_url = ""
 
+    client = get_upload_client()
+
     with file_path.open("rb") as fh:
         for chunk_num in range(1, total_chunks + 1):
             chunk_data = fh.read(CHUNK_SIZE)
             is_last = chunk_num == total_chunks
 
-            async with httpx.AsyncClient(timeout=600) as client:
-                response = await client.post(
-                    chunk_upload_url,
-                    data={
-                        "authCode": auth_code,
-                        "fileCount": str(total_chunks),
-                        "chunkNum": str(chunk_num),
-                        "isLastChunk": "1" if is_last else "0",
-                    },
-                    files={"file": (file_name, chunk_data)},
-                )
-            data = handle_api_response(response)
-            if is_last:
-                dest_url = _extract_dest_url(data)
+            for attempt in range(1, MAX_CHUNK_RETRIES + 1):
+                try:
+                    response = await client.post(
+                        chunk_upload_url,
+                        data={
+                            "authCode": auth_code,
+                            "fileCount": str(total_chunks),
+                            "chunkNum": str(chunk_num),
+                            "isLastChunk": "1" if is_last else "0",
+                        },
+                        files={"file": (file_name, chunk_data)},
+                    )
+                    data = handle_api_response(response)
+                    if is_last:
+                        dest_url = _extract_dest_url(data)
+                    break
+                except NetworkError:
+                    if attempt == MAX_CHUNK_RETRIES:
+                        raise
+                    logger.warning(
+                        "Chunk %d/%d failed (attempt %d), retrying...",
+                        chunk_num, total_chunks, attempt,
+                    )
+                    await asyncio.sleep(2 ** attempt)
 
             if on_progress:
                 uploaded = min(chunk_num * CHUNK_SIZE, file_size)
@@ -135,13 +163,13 @@ async def update_app_file_info(
     files: list of {"fileName": ..., "fileDestUrl": ..., "sha256": ...}
     """
     token = await get_access_token(config)
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/app-file-info",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json={"fileType": file_type, "files": files},
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/app-file-info",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json={"fileType": file_type, "files": files},
+    )
     return handle_api_response(response)
 
 
@@ -156,12 +184,12 @@ async def query_compile_status(
     pkg_ids: list of app package IDs returned when the file was attached.
     """
     token = await get_access_token(config)
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/package/compile/status",
-            params={"appId": app_id, "pkgIds": ",".join(pkg_ids)},
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.get(
+        f"{BASE_URL}/package/compile/status",
+        params={"appId": app_id, "pkgIds": ",".join(pkg_ids)},
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)
 
 

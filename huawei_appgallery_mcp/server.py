@@ -64,6 +64,7 @@ from huawei_appgallery_mcp.api.report import (
     get_download_report_url,
     get_install_failure_report_url,
 )
+from huawei_appgallery_mcp.http_client import close_clients
 
 logger = logging.getLogger(__name__)
 
@@ -847,10 +848,13 @@ def main() -> None:
     logger.info("Starting Huawei AppGallery MCP server")
 
     async def _run() -> None:
-        async with stdio_server() as (read_stream, write_stream):
-            await app.run(
-                read_stream, write_stream, app.create_initialization_options()
-            )
+        try:
+            async with stdio_server() as (read_stream, write_stream):
+                await app.run(
+                    read_stream, write_stream, app.create_initialization_options()
+                )
+        finally:
+            await close_clients()
 
     asyncio.run(_run())
 

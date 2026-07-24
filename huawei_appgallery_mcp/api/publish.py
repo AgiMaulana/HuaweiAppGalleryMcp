@@ -24,6 +24,7 @@ import httpx
 
 from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -76,13 +77,13 @@ async def submit_app(
     if feedback_email is not None:
         payload["feedbackEmail"] = feedback_email
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{BASE_URL}/app-submit",
-            params=params,
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.post(
+        f"{BASE_URL}/app-submit",
+        params=params,
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -118,13 +119,13 @@ async def submit_app_with_file(
     if remark is not None:
         payload["remark"] = remark
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{BASE_URL}/app-submit-with-file",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.post(
+        f"{BASE_URL}/app-submit-with-file",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -150,13 +151,13 @@ async def change_phased_release_state(
         payload["phasedReleaseEndTime"] = phased_release_end_time
     if phased_release_percent is not None:
         payload["phasedReleasePercent"] = phased_release_percent
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/phased-release/state",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/phased-release/state",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -181,13 +182,13 @@ async def update_phased_release(
         payload["phasedReleaseEndTime"] = phased_release_end_time
     if phased_release_percent is not None:
         payload["phasedReleasePercent"] = phased_release_percent
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/phased-release",
-            params={"appId": app_id, "releaseType": release_type},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/phased-release",
+        params={"appId": app_id, "releaseType": release_type},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -209,13 +210,13 @@ async def update_release_time(
     payload: dict[str, Any] = {"changeType": change_type, "releaseType": release_type}
     if release_time is not None:
         payload["releaseTime"] = release_time
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/on-shelf-time",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json=payload,
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/on-shelf-time",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json=payload,
+    )
     return handle_api_response(response)
 
 
@@ -231,11 +232,11 @@ async def set_gms_dependency(
     need_gms: 0 = does not depend on GMS, 1 = depends on GMS.
     """
     token = await get_access_token(config)
-    async with httpx.AsyncClient() as client:
-        response = await client.put(
-            f"{BASE_URL}/properties/gms",
-            params={"appId": app_id},
-            headers=build_auth_headers(token, config.client_id),
-            json={"needGms": need_gms},
-        )
+    client = get_client()
+    response = await client.put(
+        f"{BASE_URL}/properties/gms",
+        params={"appId": app_id},
+        headers=build_auth_headers(token, config.client_id),
+        json={"needGms": need_gms},
+    )
     return handle_api_response(response)

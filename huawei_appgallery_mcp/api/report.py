@@ -16,6 +16,7 @@ import httpx
 
 from huawei_appgallery_mcp.api._helpers import handle_api_response
 from huawei_appgallery_mcp.auth import AuthConfig, build_auth_headers, get_access_token
+from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +52,12 @@ async def get_download_report_url(
         params["groupBy"] = group_by
     if export_type is not None:
         params["exportType"] = export_type
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/appDownloadExport/{app_id}",
-            params=params,
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.get(
+        f"{BASE_URL}/appDownloadExport/{app_id}",
+        params=params,
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)
 
 
@@ -89,10 +90,10 @@ async def get_install_failure_report_url(
         params["groupBy"] = group_by
     if export_type is not None:
         params["exportType"] = export_type
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/appDownloadFailExport/{app_id}",
-            params=params,
-            headers=build_auth_headers(token, config.client_id),
-        )
+    client = get_client()
+    response = await client.get(
+        f"{BASE_URL}/appDownloadFailExport/{app_id}",
+        params=params,
+        headers=build_auth_headers(token, config.client_id),
+    )
     return handle_api_response(response)

@@ -137,8 +137,10 @@ def test_extract_dest_url_flat_structure():
 @pytest.mark.asyncio
 async def test_upload_file_returns_dest_url(sample_file):
     """Test that upload_file properly extracts and returns fileDestUrl."""
-    with patch("huawei_appgallery_mcp.api.file_upload.httpx.AsyncClient") as mock_client:
-        mock_client.return_value.__aenter__.return_value.post.return_value = mock_upload_response()
+    with patch("huawei_appgallery_mcp.api.file_upload.get_upload_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=mock_upload_response())
+        mock_get_client.return_value = mock_client
 
         dest_url = await upload_file(
             upload_url="https://example.com/upload",
@@ -148,20 +150,22 @@ async def test_upload_file_returns_dest_url(sample_file):
 
         assert dest_url == "https://example.com/destination/file.aab"
         # Verify the upload was called
-        mock_client.return_value.__aenter__.return_value.post.assert_called_once()
+        mock_client.post.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_upload_file_handles_api_error():
     """Test that upload_file properly handles API errors."""
     with (
-        patch("huawei_appgallery_mcp.api.file_upload.httpx.AsyncClient") as mock_client,
+        patch("huawei_appgallery_mcp.api.file_upload.get_upload_client") as mock_get_client,
         pytest.raises(APIError, match="AppGallery API error"),
     ):
-        mock_client.return_value.__aenter__.return_value.post.return_value = mock_upload_response(
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=mock_upload_response(
             code=204144641,
             msg="The files url is empty"
-        )
+        ))
+        mock_get_client.return_value = mock_client
 
         with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.aab') as f:
             f.write(b'\x00' * 1024)
@@ -176,11 +180,13 @@ async def test_upload_file_handles_api_error():
 @pytest.mark.asyncio
 async def test_upload_file_with_correct_spelling(sample_file):
     """Test upload_file when API returns correct spelling (fileDestUrl)."""
-    with patch("huawei_appgallery_mcp.api.file_upload.httpx.AsyncClient") as mock_client:
+    with patch("huawei_appgallery_mcp.api.file_upload.get_upload_client") as mock_get_client:
         # Response with correct spelling
-        mock_client.return_value.__aenter__.return_value.post.return_value = mock_upload_response(
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(return_value=mock_upload_response(
             include_typo=False
-        )
+        ))
+        mock_get_client.return_value = mock_client
 
         dest_url = await upload_file(
             upload_url="https://example.com/upload",

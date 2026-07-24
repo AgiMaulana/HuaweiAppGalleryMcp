@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import httpx
 
 from huawei_appgallery_mcp.errors import AuthError, ValidationError
+from huawei_appgallery_mcp.http_client import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +68,17 @@ async def get_access_token(config: AuthConfig) -> str:
     if _cached_token and _token_expires_at - now > _REFRESH_BUFFER:
         return _cached_token
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            TOKEN_URL,
-            json={
-                "grant_type": "client_credentials",
-                "client_id": config.client_id,
-                "client_secret": config.client_secret,
-            },
-        )
-        response.raise_for_status()
-        data = response.json()
+    client = get_client()
+    response = await client.post(
+        TOKEN_URL,
+        json={
+            "grant_type": "client_credentials",
+            "client_id": config.client_id,
+            "client_secret": config.client_secret,
+        },
+    )
+    response.raise_for_status()
+    data = response.json()
 
     # connect-api wraps errors in a ret.code field instead of HTTP 4xx
     if "ret" in data and data["ret"].get("code", 0) != 0:
